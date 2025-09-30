@@ -124,36 +124,36 @@ detect_os_and_requirements() {
         log "Kernel: $(uname -r)"
     fi
 
-    # Check Laravel requirements: PHP 8.2+
-    REQUIRES_PHP="8.2"
-    REQUIRES_UBUNTU_MIN="20.04"
+    # Check Laravel requirements: PHP 8.0+ (Laravel 11)
+    REQUIRES_PHP="8.0"
+    REQUIRES_UBUNTU_MIN="16.04"
 
-    # Determine if OS upgrade is needed
+    # Determine PHP version based on Ubuntu version (no upgrade needed!)
     case "$OS_CODENAME" in
-        xenial)  # Ubuntu 16.04 - NEEDS UPGRADE
-            NEEDS_UPGRADE=true
-            TARGET_VERSION="20.04"
-            log_warning "Ubuntu 16.04 detected - Upgrade to 20.04 required for PHP 8.2"
-            ;;
-        bionic)  # Ubuntu 18.04 - NEEDS UPGRADE
-            NEEDS_UPGRADE=true
-            TARGET_VERSION="20.04"
-            log_warning "Ubuntu 18.04 detected - Upgrade to 20.04 required for PHP 8.2"
-            ;;
-        focal)   # Ubuntu 20.04 - OK
+        xenial)  # Ubuntu 16.04 - Use PHP 8.0
             NEEDS_UPGRADE=false
-            PHP_VERSION="8.2"
-            log "✅ Ubuntu 20.04 - Compatible with PHP 8.2"
+            PHP_VERSION="8.0"
+            log "✅ Ubuntu 16.04 - Compatible with PHP 8.0 (Laravel 11)"
             ;;
-        jammy|lunar|mantic|noble)  # Ubuntu 22.04+ - OK
+        bionic)  # Ubuntu 18.04 - Use PHP 8.0
+            NEEDS_UPGRADE=false
+            PHP_VERSION="8.0"
+            log "✅ Ubuntu 18.04 - Compatible with PHP 8.0 (Laravel 11)"
+            ;;
+        focal)   # Ubuntu 20.04 - Use PHP 8.1
+            NEEDS_UPGRADE=false
+            PHP_VERSION="8.1"
+            log "✅ Ubuntu 20.04 - Compatible with PHP 8.1"
+            ;;
+        jammy|lunar|mantic|noble)  # Ubuntu 22.04+ - Use PHP 8.2
             NEEDS_UPGRADE=false
             PHP_VERSION="8.2"
             log "✅ Modern Ubuntu detected - Compatible with PHP 8.2"
             ;;
         *)
             NEEDS_UPGRADE=false
-            PHP_VERSION="8.2"
-            log_warning "Unknown Ubuntu version - Will attempt PHP 8.2 installation"
+            PHP_VERSION="8.0"
+            log_warning "Unknown Ubuntu version - Will attempt PHP 8.0 installation"
             ;;
     esac
 
@@ -383,40 +383,44 @@ phase1_system_preparation() {
     log_success "✅ Phase 1 Complete: System prepared"
 }
 
-# PHASE 2: PHP 8.2 INSTALLATION
+# PHASE 2: PHP INSTALLATION
 phase2_php_installation() {
-    log_info "🐘 PHASE 2: PHP 8.2 Environment Setup"
+    log_info "🐘 PHASE 2: PHP $PHP_VERSION Environment Setup"
 
     # Add PHP repository
-    log "Adding PHP 8.2 repository..."
+    log "Adding PHP repository..."
     safe_run "add-apt-repository -y ppa:ondrej/php" "Adding PHP PPA"
     retry_run "apt-get update" "Updating after PPA" 3
 
-    # Install PHP 8.2 and extensions
-    log "Installing PHP 8.2 and required extensions..."
+    # Install PHP and extensions
+    log "Installing PHP $PHP_VERSION and required extensions..."
 
     PHP_PACKAGES=(
-        "php8.2"
-        "php8.2-cli"
-        "php8.2-sqlite3"
-        "php8.2-xml"
-        "php8.2-mbstring"
-        "php8.2-curl"
-        "php8.2-zip"
-        "php8.2-gd"
-        "php8.2-bcmath"
-        "php8.2-intl"
-        "php8.2-tokenizer"
+        "php${PHP_VERSION}"
+        "php${PHP_VERSION}-cli"
+        "php${PHP_VERSION}-sqlite3"
+        "php${PHP_VERSION}-xml"
+        "php${PHP_VERSION}-mbstring"
+        "php${PHP_VERSION}-curl"
+        "php${PHP_VERSION}-zip"
+        "php${PHP_VERSION}-gd"
+        "php${PHP_VERSION}-bcmath"
+        "php${PHP_VERSION}-intl"
     )
+
+    # Add tokenizer if PHP 7.2+
+    if dpkg --compare-versions "$PHP_VERSION" ge "7.2"; then
+        PHP_PACKAGES+=("php${PHP_VERSION}-tokenizer")
+    fi
 
     for package in "${PHP_PACKAGES[@]}"; do
         safe_run "DEBIAN_FRONTEND=noninteractive apt-get install -y $package" "Installing $package"
     done
 
     # Create symlink for php command if needed
-    if [ ! -f /usr/bin/php ] || [ "$(php -r 'echo PHP_MAJOR_VERSION.\".\".PHP_MINOR_VERSION;')" != "8.2" ]; then
-        log "Creating PHP 8.2 symlink..."
-        update-alternatives --set php /usr/bin/php8.2 2>/dev/null || ln -sf /usr/bin/php8.2 /usr/bin/php
+    if [ ! -f /usr/bin/php ]; then
+        log "Creating PHP $PHP_VERSION symlink..."
+        update-alternatives --set php /usr/bin/php${PHP_VERSION} 2>/dev/null || ln -sf /usr/bin/php${PHP_VERSION} /usr/bin/php
     fi
 
     # Verify PHP installation
@@ -424,14 +428,13 @@ phase2_php_installation() {
         PHP_INSTALLED_VERSION=$(php --version | head -1)
         log "✅ PHP installed: $PHP_INSTALLED_VERSION"
 
-        # Verify it's 8.2+
+        # Verify it's 8.0+
         PHP_MAJOR=$(php -r 'echo PHP_MAJOR_VERSION;')
-        PHP_MINOR=$(php -r 'echo PHP_MINOR_VERSION;')
 
-        if [ "$PHP_MAJOR" -ge 8 ] && [ "$PHP_MINOR" -ge 2 ]; then
-            log_success "✅ PHP 8.2+ confirmed - Laravel 12 compatible"
+        if [ "$PHP_MAJOR" -ge 8 ]; then
+            log_success "✅ PHP 8.0+ confirmed - Laravel 11 compatible"
         else
-            log_error "❌ PHP version too old for Laravel 12"
+            log_error "❌ PHP version too old for Laravel 11 (requires PHP 8.0+)"
             exit 1
         fi
     else
@@ -439,7 +442,7 @@ phase2_php_installation() {
         exit 1
     fi
 
-    log_success "✅ Phase 2 Complete: PHP 8.2 installed"
+    log_success "✅ Phase 2 Complete: PHP $PHP_VERSION installed"
 }
 
 # PHASE 3: COMPOSER INSTALLATION
