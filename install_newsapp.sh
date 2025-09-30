@@ -1,6 +1,7 @@
 #!/bin/bash
-# NewsApp One-Command Installer - COMPATIBLE WITH UBUNTU 16.04+
+# NewsApp One-Command Installer - AUTOMATIC UBUNTU UPGRADE + PHP 8.2
 # Complete setup from fresh NanoPi to working Laravel + Vue system
+# Automatically upgrades Ubuntu 16.04 → 20.04 → 22.04 if needed
 # Usage: wget -qO- https://raw.githubusercontent.com/EmmanuelMsafiri1992/OnlyNews2025/main/install_newsapp.sh | sudo bash
 
 # DO NOT USE set -e - we want to handle errors gracefully
@@ -16,6 +17,7 @@ NC='\033[0m'
 REPO_URL="https://github.com/EmmanuelMsafiri1992/OnlyNews2025.git"
 INSTALL_DIR="/opt/newsapp"
 LOG_FILE="/tmp/newsapp_complete_install.log"
+UPGRADE_MARKER="/tmp/newsapp_upgrade_in_progress"
 
 # Initialize log file
 echo "NewsApp Installation Started: $(date)" > "$LOG_FILE"
@@ -24,7 +26,7 @@ echo -e "${PURPLE}╔═══════════════════�
 echo -e "${PURPLE}║          🚀 NEWSAPP ONE-COMMAND INSTALLER 🚀                ║${NC}"
 echo -e "${PURPLE}║                                                              ║${NC}"
 echo -e "${PURPLE}║  Fresh NanoPi → Fully Working Laravel + Vue News System    ║${NC}"
-echo -e "${PURPLE}║  Compatible with Ubuntu 16.04+ and ARM architecture        ║${NC}"
+echo -e "${PURPLE}║  Auto-upgrades Ubuntu + Installs PHP 8.2 for Laravel 12    ║${NC}"
 echo -e "${PURPLE}║                                                              ║${NC}"
 echo -e "${PURPLE}╚══════════════════════════════════════════════════════════════╝${NC}"
 echo
@@ -107,9 +109,9 @@ check_root() {
     fi
 }
 
-# Detect OS and set PHP version
-detect_os_and_php_version() {
-    log_info "🔍 Detecting OS version and architecture..."
+# Detect OS and determine if upgrade is needed
+detect_os_and_requirements() {
+    log_info "🔍 Detecting OS version and requirements..."
 
     if [ -f /etc/os-release ]; then
         . /etc/os-release
@@ -119,40 +121,191 @@ detect_os_and_php_version() {
 
         log "OS Detected: $OS_NAME $OS_VERSION ($OS_CODENAME)"
         log "Architecture: $(uname -m)"
+        log "Kernel: $(uname -r)"
     fi
 
-    # Determine PHP version based on Ubuntu version
+    # Check Laravel requirements: PHP 8.2+
+    REQUIRES_PHP="8.2"
+    REQUIRES_UBUNTU_MIN="20.04"
+
+    # Determine if OS upgrade is needed
     case "$OS_CODENAME" in
-        xenial)  # Ubuntu 16.04
-            PHP_VERSION="7.4"
-            USE_PPA=true
-            log "Using PHP 7.4 for Ubuntu 16.04 compatibility"
+        xenial)  # Ubuntu 16.04 - NEEDS UPGRADE
+            NEEDS_UPGRADE=true
+            TARGET_VERSION="20.04"
+            log_warning "Ubuntu 16.04 detected - Upgrade to 20.04 required for PHP 8.2"
             ;;
-        bionic)  # Ubuntu 18.04
-            PHP_VERSION="7.4"
-            USE_PPA=true
-            log "Using PHP 7.4 for Ubuntu 18.04"
+        bionic)  # Ubuntu 18.04 - NEEDS UPGRADE
+            NEEDS_UPGRADE=true
+            TARGET_VERSION="20.04"
+            log_warning "Ubuntu 18.04 detected - Upgrade to 20.04 required for PHP 8.2"
             ;;
-        focal)   # Ubuntu 20.04
-            PHP_VERSION="8.1"
-            USE_PPA=true
-            log "Using PHP 8.1 for Ubuntu 20.04"
-            ;;
-        jammy|lunar|mantic)  # Ubuntu 22.04+
+        focal)   # Ubuntu 20.04 - OK
+            NEEDS_UPGRADE=false
             PHP_VERSION="8.2"
-            USE_PPA=true
-            log "Using PHP 8.2 for modern Ubuntu"
+            log "✅ Ubuntu 20.04 - Compatible with PHP 8.2"
+            ;;
+        jammy|lunar|mantic|noble)  # Ubuntu 22.04+ - OK
+            NEEDS_UPGRADE=false
+            PHP_VERSION="8.2"
+            log "✅ Modern Ubuntu detected - Compatible with PHP 8.2"
             ;;
         *)
-            # Default to system PHP
-            PHP_VERSION="7.0"
-            USE_PPA=false
-            log_warning "Unknown OS codename, using system default PHP"
+            NEEDS_UPGRADE=false
+            PHP_VERSION="8.2"
+            log_warning "Unknown Ubuntu version - Will attempt PHP 8.2 installation"
             ;;
     esac
 
+    export NEEDS_UPGRADE
+    export TARGET_VERSION
     export PHP_VERSION
-    export USE_PPA
+    export OS_CODENAME
+}
+
+# PHASE -1: UBUNTU UPGRADE (if needed)
+phase_ubuntu_upgrade() {
+    if [ "$NEEDS_UPGRADE" != "true" ]; then
+        log "✅ Ubuntu version is compatible, skipping upgrade"
+        return 0
+    fi
+
+    log_info "🔄 PHASE -1: Ubuntu System Upgrade"
+
+    echo
+    echo -e "${YELLOW}╔═══════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${YELLOW}║                                                               ║${NC}"
+    echo -e "${YELLOW}║  ⚠️  UBUNTU UPGRADE REQUIRED                                 ║${NC}"
+    echo -e "${YELLOW}║                                                               ║${NC}"
+    echo -e "${YELLOW}║  Your system needs to upgrade from Ubuntu $OS_VERSION to $TARGET_VERSION   ║${NC}"
+    echo -e "${YELLOW}║  This is required for PHP 8.2 (Laravel 12 requirement)       ║${NC}"
+    echo -e "${YELLOW}║                                                               ║${NC}"
+    echo -e "${YELLOW}║  The upgrade will:                                           ║${NC}"
+    echo -e "${YELLOW}║  - Take 30-60 minutes                                        ║${NC}"
+    echo -e "${YELLOW}║  - Require internet connection                               ║${NC}"
+    echo -e "${YELLOW}║  - May require system reboot                                 ║${NC}"
+    echo -e "${YELLOW}║  - Automatically resume installation after reboot            ║${NC}"
+    echo -e "${YELLOW}║                                                               ║${NC}"
+    echo -e "${YELLOW}╚═══════════════════════════════════════════════════════════════╝${NC}"
+    echo
+
+    read -p "$(echo -e ${CYAN}Continue with Ubuntu upgrade? [y/N]: ${NC})" -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        log_error "Ubuntu upgrade cancelled by user"
+        echo -e "${RED}Installation cannot continue without Ubuntu upgrade.${NC}"
+        echo -e "${YELLOW}Laravel 12 requires PHP 8.2, which needs Ubuntu 20.04+${NC}"
+        exit 1
+    fi
+
+    # Create upgrade marker for resuming after reboot
+    cat > "$UPGRADE_MARKER" << EOF
+STAGE=upgrade_complete
+REPO_URL=$REPO_URL
+INSTALL_DIR=$INSTALL_DIR
+LOG_FILE=$LOG_FILE
+EOF
+
+    # Install update-manager-core if not present
+    log "Installing update-manager-core..."
+    safe_run "DEBIAN_FRONTEND=noninteractive apt-get update" "Updating package list"
+    safe_run "DEBIAN_FRONTEND=noninteractive apt-get install -y update-manager-core" "Installing update-manager-core"
+
+    # Configure for non-interactive upgrade
+    log "Configuring non-interactive upgrade..."
+    sed -i 's/Prompt=.*/Prompt=normal/' /etc/update-manager/release-upgrades 2>/dev/null || true
+
+    # Set environment for non-interactive
+    export DEBIAN_FRONTEND=noninteractive
+    export DEBIAN_PRIORITY=critical
+
+    # Perform upgrade
+    log_info "Starting Ubuntu upgrade to $TARGET_VERSION (this will take 30-60 minutes)..."
+    echo
+    echo -e "${CYAN}═══════════════════════════════════════════════════════════════${NC}"
+    echo -e "${CYAN}Starting OS upgrade... You can monitor progress below.${NC}"
+    echo -e "${CYAN}═══════════════════════════════════════════════════════════════${NC}"
+    echo
+
+    # Run upgrade with auto-confirmation
+    do-release-upgrade -f DistUpgradeViewNonInteractive 2>&1 | tee -a "$LOG_FILE"
+
+    UPGRADE_RESULT=$?
+
+    if [ $UPGRADE_RESULT -eq 0 ]; then
+        log_success "✅ Ubuntu upgrade completed successfully!"
+
+        # Update marker
+        sed -i 's/STAGE=.*/STAGE=after_upgrade/' "$UPGRADE_MARKER"
+
+        # Check if reboot is needed
+        if [ -f /var/run/reboot-required ]; then
+            log_warning "System reboot required to complete upgrade"
+
+            # Create systemd service to resume installation after reboot
+            cat > /etc/systemd/system/newsapp-resume-install.service << 'EOFSERVICE'
+[Unit]
+Description=Resume NewsApp Installation After Upgrade
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash -c "wget -qO- https://raw.githubusercontent.com/EmmanuelMsafiri1992/OnlyNews2025/main/install_newsapp.sh | bash"
+RemainAfterExit=no
+
+[Install]
+WantedBy=multi-user.target
+EOFSERVICE
+
+            systemctl enable newsapp-resume-install.service
+
+            echo
+            echo -e "${GREEN}╔═══════════════════════════════════════════════════════════════╗${NC}"
+            echo -e "${GREEN}║                                                               ║${NC}"
+            echo -e "${GREEN}║  ✅ Ubuntu upgrade successful!                               ║${NC}"
+            echo -e "${GREEN}║                                                               ║${NC}"
+            echo -e "${GREEN}║  System will reboot in 10 seconds...                         ║${NC}"
+            echo -e "${GREEN}║  Installation will automatically resume after reboot          ║${NC}"
+            echo -e "${GREEN}║                                                               ║${NC}"
+            echo -e "${GREEN}╚═══════════════════════════════════════════════════════════════╝${NC}"
+            echo
+
+            sleep 10
+            reboot
+            exit 0
+        else
+            log_success "✅ Upgrade complete, no reboot required"
+            rm -f "$UPGRADE_MARKER"
+        fi
+    else
+        log_error "Ubuntu upgrade failed or was cancelled"
+        echo -e "${RED}Upgrade failed. Please check $LOG_FILE for details.${NC}"
+        exit 1
+    fi
+}
+
+# Check if resuming after upgrade
+check_resume_after_upgrade() {
+    if [ -f "$UPGRADE_MARKER" ]; then
+        . "$UPGRADE_MARKER"
+
+        if [ "$STAGE" = "after_upgrade" ]; then
+            log_info "Resuming installation after Ubuntu upgrade..."
+
+            # Disable the resume service
+            systemctl disable newsapp-resume-install.service 2>/dev/null || true
+            rm -f /etc/systemd/system/newsapp-resume-install.service
+            rm -f "$UPGRADE_MARKER"
+
+            # Re-detect OS
+            detect_os_and_requirements
+
+            log_success "✅ Resumed after upgrade - Now on Ubuntu $(lsb_release -rs)"
+            return 0
+        fi
+    fi
+    return 1
 }
 
 # PHASE 0: COMPLETE SYSTEM CLEANUP
@@ -161,16 +314,13 @@ phase0_complete_cleanup() {
 
     # Stop all running processes
     log "Stopping all NewsApp processes..."
-
     pkill -9 -f "php.*artisan.*serve" 2>/dev/null || true
     pkill -9 -f "vite" 2>/dev/null || true
     pkill -9 -f "newsapp" 2>/dev/null || true
-
     sleep 2
 
     # Stop and disable systemd services
     log "Stopping and disabling systemd services..."
-
     systemctl stop newsapp 2>/dev/null || true
     systemctl disable newsapp 2>/dev/null || true
     systemctl stop newsapp-vite 2>/dev/null || true
@@ -180,7 +330,6 @@ phase0_complete_cleanup() {
 
     # Remove systemd service files
     log "Removing systemd service files..."
-
     rm -f /etc/systemd/system/newsapp.service 2>/dev/null || true
     rm -f /etc/systemd/system/newsapp-vite.service 2>/dev/null || true
     rm -f /etc/systemd/system/newsapp-ip-monitor.service 2>/dev/null || true
@@ -218,84 +367,83 @@ phase1_system_preparation() {
     )
 
     for tool in "${ESSENTIAL_TOOLS[@]}"; do
-        safe_run "apt-get install -y $tool" "Installing $tool"
+        safe_run "DEBIAN_FRONTEND=noninteractive apt-get install -y $tool" "Installing $tool"
     done
 
     log_success "✅ Phase 1 Complete: System prepared"
 }
 
-# PHASE 2: PHP INSTALLATION
+# PHASE 2: PHP 8.2 INSTALLATION
 phase2_php_installation() {
-    log_info "🐘 PHASE 2: PHP Environment Setup"
+    log_info "🐘 PHASE 2: PHP 8.2 Environment Setup"
 
-    # Add PHP repository if needed
-    if [ "$USE_PPA" = true ]; then
-        log "Adding PHP repository for PHP $PHP_VERSION..."
-        safe_run "add-apt-repository -y ppa:ondrej/php" "Adding PHP PPA"
-        retry_run "apt-get update" "Updating after PPA" 3
-    fi
+    # Add PHP repository
+    log "Adding PHP 8.2 repository..."
+    safe_run "add-apt-repository -y ppa:ondrej/php" "Adding PHP PPA"
+    retry_run "apt-get update" "Updating after PPA" 3
 
-    # Install PHP and extensions
-    log "Installing PHP $PHP_VERSION and extensions..."
+    # Install PHP 8.2 and extensions
+    log "Installing PHP 8.2 and required extensions..."
 
-    # Build package list dynamically
     PHP_PACKAGES=(
-        "php${PHP_VERSION}"
-        "php${PHP_VERSION}-cli"
-        "php${PHP_VERSION}-sqlite3"
-        "php${PHP_VERSION}-xml"
-        "php${PHP_VERSION}-mbstring"
-        "php${PHP_VERSION}-curl"
-        "php${PHP_VERSION}-zip"
-        "php${PHP_VERSION}-gd"
-        "php${PHP_VERSION}-bcmath"
+        "php8.2"
+        "php8.2-cli"
+        "php8.2-sqlite3"
+        "php8.2-xml"
+        "php8.2-mbstring"
+        "php8.2-curl"
+        "php8.2-zip"
+        "php8.2-gd"
+        "php8.2-bcmath"
+        "php8.2-intl"
+        "php8.2-tokenizer"
     )
-
-    # Add tokenizer if available (not in older PHP versions)
-    if dpkg --compare-versions "$PHP_VERSION" ge "7.2"; then
-        PHP_PACKAGES+=("php${PHP_VERSION}-tokenizer")
-    fi
-
-    # Add intl if available
-    PHP_PACKAGES+=("php${PHP_VERSION}-intl")
 
     for package in "${PHP_PACKAGES[@]}"; do
         safe_run "DEBIAN_FRONTEND=noninteractive apt-get install -y $package" "Installing $package"
     done
 
     # Create symlink for php command if needed
-    if [ ! -f /usr/bin/php ]; then
-        log "Creating PHP symlink..."
-        ln -s /usr/bin/php${PHP_VERSION} /usr/bin/php 2>/dev/null || true
+    if [ ! -f /usr/bin/php ] || [ "$(php -r 'echo PHP_MAJOR_VERSION.\".\".PHP_MINOR_VERSION;')" != "8.2" ]; then
+        log "Creating PHP 8.2 symlink..."
+        update-alternatives --set php /usr/bin/php8.2 2>/dev/null || ln -sf /usr/bin/php8.2 /usr/bin/php
     fi
 
     # Verify PHP installation
     if command -v php >/dev/null 2>&1; then
         PHP_INSTALLED_VERSION=$(php --version | head -1)
         log "✅ PHP installed: $PHP_INSTALLED_VERSION"
+
+        # Verify it's 8.2+
+        PHP_MAJOR=$(php -r 'echo PHP_MAJOR_VERSION;')
+        PHP_MINOR=$(php -r 'echo PHP_MINOR_VERSION;')
+
+        if [ "$PHP_MAJOR" -ge 8 ] && [ "$PHP_MINOR" -ge 2 ]; then
+            log_success "✅ PHP 8.2+ confirmed - Laravel 12 compatible"
+        else
+            log_error "❌ PHP version too old for Laravel 12"
+            exit 1
+        fi
     else
         log_error "❌ PHP installation failed!"
+        exit 1
     fi
 
-    log_success "✅ Phase 2 Complete: PHP installed"
+    log_success "✅ Phase 2 Complete: PHP 8.2 installed"
 }
 
 # PHASE 3: COMPOSER INSTALLATION
 phase3_composer_installation() {
     log_info "🎼 PHASE 3: Composer Installation"
 
-    # Download and install Composer
     log "Installing Composer..."
-
     cd /tmp
     retry_run "wget https://getcomposer.org/installer -O composer-setup.php" "Downloading Composer" 3
     safe_run "php composer-setup.php --install-dir=/usr/local/bin --filename=composer" "Installing Composer"
     rm -f composer-setup.php
 
-    # Set PHP path in environment
     export PATH="/usr/bin:$PATH"
 
-    # Verify Composer
     if command -v composer >/dev/null 2>&1; then
         log "✅ Composer installed: $(composer --version 2>/dev/null | head -1)"
     else
@@ -309,13 +457,10 @@ phase3_composer_installation() {
 phase4_nodejs_installation() {
     log_info "📦 PHASE 4: Node.js & NPM Installation"
 
-    # Install Node.js 16.x (compatible with Ubuntu 16.04)
-    log "Installing Node.js 16.x for ARM compatibility..."
-
-    retry_run "curl -fsSL https://deb.nodesource.com/setup_16.x | bash -" "Adding NodeSource repository" 3
+    log "Installing Node.js 18.x LTS..."
+    retry_run "curl -fsSL https://deb.nodesource.com/setup_18.x | bash -" "Adding NodeSource repository" 3
     safe_run "apt-get install -y nodejs" "Installing Node.js"
 
-    # Verify installations
     if command -v node >/dev/null 2>&1; then
         log "✅ Node.js installed: $(node --version)"
     fi
@@ -331,12 +476,10 @@ phase4_nodejs_installation() {
 phase5_clone_repository() {
     log_info "📥 PHASE 5: Repository Download"
 
-    # Clone the repository
     log "Cloning NewsApp repository..."
     cd /tmp
     retry_run "git clone $REPO_URL newsapp-temp" "Cloning repository" 3
 
-    # Move to installation directory
     log "Moving to installation directory..."
     mkdir -p "$INSTALL_DIR"
 
@@ -358,13 +501,11 @@ phase5_clone_repository() {
 phase6_database_setup() {
     log_info "💾 PHASE 6: Database Configuration"
 
-    # Check if SQLite database exists in repository
     if [[ -f "$INSTALL_DIR/database/database.sqlite" ]]; then
         log "✅ SQLite database found in repository"
         log "✅ Using SQLite database from repository"
         chmod 664 "$INSTALL_DIR/database/database.sqlite"
     else
-        # Create empty SQLite database
         log "Creating SQLite database..."
         touch "$INSTALL_DIR/database/database.sqlite"
         chmod 664 "$INSTALL_DIR/database/database.sqlite"
@@ -379,13 +520,9 @@ phase7_application_configuration() {
     log_info "⚙️ PHASE 7: Application Configuration"
 
     cd "$INSTALL_DIR"
-
-    # Ensure PHP is in PATH for all commands
     export PATH="/usr/bin:/usr/local/bin:$PATH"
 
-    # Create .env file
     log "Creating .env file..."
-
     if [[ -f ".env.example" ]]; then
         cp .env.example .env
     else
@@ -411,35 +548,28 @@ QUEUE_CONNECTION=database
 EOF
     fi
 
-    # Get server IP for proper configuration
     SERVER_IP=$(ip addr show | grep "inet " | grep -v 127.0.0.1 | head -1 | awk '{print $2}' | cut -d'/' -f1 2>/dev/null || echo "localhost")
 
-    # Update .env with proper URLs
     sed -i "s|APP_URL=.*|APP_URL=http://$SERVER_IP:8000|" .env
 
-    # Add VITE_API_BASE_URL if not exists
     if grep -q "^VITE_API_BASE_URL=" .env; then
         sed -i "s|VITE_API_BASE_URL=.*|VITE_API_BASE_URL=http://$SERVER_IP:8000|" .env
     else
         echo "VITE_API_BASE_URL=http://$SERVER_IP:8000" >> .env
     fi
 
-    # Ensure SQLite is configured
     sed -i "s/DB_CONNECTION=.*/DB_CONNECTION=sqlite/" .env
     sed -i "s|DB_DATABASE=.*|DB_DATABASE=database/database.sqlite|" .env
 
     log "✅ .env file configured"
 
-    # Install Composer dependencies
     log "Installing Composer dependencies (this may take several minutes)..."
     export COMPOSER_ALLOW_SUPERUSER=1
     retry_run "composer install --no-dev --optimize-autoloader --no-interaction" "Composer install" 3
 
-    # Generate application key
     log "Generating application key..."
     php artisan key:generate --force 2>&1 | tee -a "$LOG_FILE"
 
-    # Only run migrations if database is empty or new
     if [[ ! -s "$INSTALL_DIR/database/database.sqlite" ]]; then
         log "Running database migrations..."
         php artisan migrate --force 2>&1 | tee -a "$LOG_FILE"
@@ -447,22 +577,17 @@ EOF
         log "✅ Using existing database with data"
     fi
 
-    # Install NPM dependencies
     log "Installing NPM dependencies (this may take several minutes)..."
     retry_run "npm install --legacy-peer-deps --loglevel=error" "NPM install" 3
 
-    # Build frontend assets
     log "Building frontend assets..."
     npm run build 2>&1 | tee -a "$LOG_FILE"
 
-    # Set permissions
     log "Setting proper permissions..."
     chown -R www-data:www-data "$INSTALL_DIR"
     chmod -R 755 "$INSTALL_DIR"
     chmod -R 775 "$INSTALL_DIR/storage"
     chmod -R 775 "$INSTALL_DIR/bootstrap/cache"
-
-    # Make IP update script executable
     chmod +x "$INSTALL_DIR/check-and-update-ip.sh" 2>/dev/null || true
 
     log_success "✅ Phase 7 Complete: Application configured"
@@ -472,11 +597,9 @@ EOF
 phase8_systemd_service() {
     log_info "⚙️ PHASE 8: Systemd Service Configuration"
 
-    # Get PHP binary path
     PHP_BIN=$(which php)
     NPM_BIN=$(which npm)
 
-    # Create Laravel service
     log "Creating Laravel systemd service..."
     cat > /etc/systemd/system/newsapp.service << EOF
 [Unit]
@@ -501,7 +624,6 @@ SyslogIdentifier=newsapp
 WantedBy=multi-user.target
 EOF
 
-    # Create Vite service for development mode
     log "Creating Vite systemd service..."
     cat > /etc/systemd/system/newsapp-vite.service << EOF
 [Unit]
@@ -525,7 +647,6 @@ SyslogIdentifier=newsapp-vite
 WantedBy=multi-user.target
 EOF
 
-    # Create IP monitor systemd service
     log "Creating IP monitor systemd service..."
     cat > /etc/systemd/system/newsapp-ip-monitor.service << 'EOF'
 [Unit]
@@ -543,7 +664,6 @@ StandardError=journal
 WantedBy=multi-user.target
 EOF
 
-    # Create IP monitor timer (runs every 5 minutes)
     log "Creating IP monitor timer..."
     cat > /etc/systemd/system/newsapp-ip-monitor.timer << 'EOF'
 [Unit]
@@ -559,7 +679,6 @@ AccuracySec=1min
 WantedBy=timers.target
 EOF
 
-    # Enable and start services
     systemctl daemon-reload
     systemctl enable newsapp
     systemctl enable newsapp-vite
@@ -573,17 +692,14 @@ EOF
 phase9_service_startup() {
     log_info "🚀 PHASE 9: Service Startup"
 
-    # Start Laravel service
     log "Starting NewsApp Laravel service..."
     systemctl start newsapp
     sleep 5
 
-    # Start Vite service
     log "Starting Vite development server..."
     systemctl start newsapp-vite
     sleep 5
 
-    # Check service status
     if systemctl is-active newsapp >/dev/null 2>&1; then
         log_success "✅ Laravel service: RUNNING"
     else
@@ -604,13 +720,11 @@ phase9_service_startup() {
         log_warning "⚠️ IP Monitor: INACTIVE"
     fi
 
-    # Run IP update script immediately
     log "Running initial IP configuration..."
     if [ -f "$INSTALL_DIR/check-and-update-ip.sh" ]; then
         "$INSTALL_DIR/check-and-update-ip.sh" 2>&1 | tee -a "$LOG_FILE"
     fi
 
-    # Test web interface
     log "Testing web interface..."
     sleep 5
 
@@ -627,20 +741,17 @@ phase9_service_startup() {
 final_completion() {
     log_info "🏁 FINAL: Installation Completion"
 
-    # Get system IP
     IP_ADDRESS=$(ip addr show | grep "inet " | grep -v 127.0.0.1 | head -1 | awk '{print $2}' | cut -d'/' -f1 2>/dev/null || echo "localhost")
-
-    # Verify PHP path
     export PATH="/usr/bin:/usr/local/bin:$PATH"
     PHP_BIN=$(which php)
 
-    # Create completion file
     cat > "$INSTALL_DIR/INSTALLATION_COMPLETE.txt" << EOF
 🎉 NEWSAPP ONE-COMMAND INSTALLATION SUCCESSFUL! 🎉
 ================================================================
 
 🕐 Installation completed: $(date)
 🖥️  System: $(uname -a)
+💿 OS Version: $(lsb_release -ds 2>/dev/null || cat /etc/os-release | grep PRETTY_NAME | cut -d'"' -f2)
 🐘 PHP version: $($PHP_BIN --version 2>/dev/null | head -1 || echo "PHP installed")
 📍 Installation directory: $INSTALL_DIR
 📝 Complete log: $LOG_FILE
@@ -671,7 +782,6 @@ final_completion() {
 ✅ YOUR NEWSAPP SYSTEM IS FULLY OPERATIONAL!
 EOF
 
-    # Display success message
     echo
     echo -e "${GREEN}╔═══════════════════════════════════════════════════════════════════════════╗${NC}"
     echo -e "${GREEN}║                                                                           ║${NC}"
@@ -681,7 +791,8 @@ EOF
     echo -e "${GREEN}║                                                                           ║${NC}"
     echo -e "${GREEN}║  🌐 Access your system at: ${CYAN}http://$IP_ADDRESS:8000${GREEN}                       ║${NC}"
     echo -e "${GREEN}║                                                                           ║${NC}"
-    echo -e "${GREEN}║  🔐 Database: SQLite (database/database.sqlite)                           ║${NC}"
+    echo -e "${GREEN}║  🐘 PHP Version: $(php -r 'echo PHP_VERSION;')                                                ║${NC}"
+    echo -e "${GREEN}║  💿 OS Version: $(lsb_release -rs 2>/dev/null || echo 'Linux')                                                  ║${NC}"
     echo -e "${GREEN}║                                                                           ║${NC}"
     echo -e "${GREEN}║  📝 Documentation: $INSTALL_DIR/INSTALLATION_COMPLETE.txt           ║${NC}"
     echo -e "${GREEN}║  📊 Installation log: $LOG_FILE                     ║${NC}"
@@ -701,8 +812,20 @@ main() {
     echo
 
     check_root
-    detect_os_and_php_version
-    echo
+
+    # Check if resuming after reboot
+    if check_resume_after_upgrade; then
+        log_info "Continuing installation after OS upgrade..."
+    else
+        detect_os_and_requirements
+        echo
+
+        # Perform Ubuntu upgrade if needed
+        if [ "$NEEDS_UPGRADE" = "true" ]; then
+            phase_ubuntu_upgrade
+            # After upgrade, script will either reboot or continue
+        fi
+    fi
 
     phase0_complete_cleanup
     echo
