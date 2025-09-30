@@ -189,13 +189,23 @@ phase_ubuntu_upgrade() {
     echo -e "${YELLOW}╚═══════════════════════════════════════════════════════════════╝${NC}"
     echo
 
-    read -p "$(echo -e ${CYAN}Continue with Ubuntu upgrade? [y/N]: ${NC})" -n 1 -r
-    echo
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        log_error "Ubuntu upgrade cancelled by user"
-        echo -e "${RED}Installation cannot continue without Ubuntu upgrade.${NC}"
-        echo -e "${YELLOW}Laravel 12 requires PHP 8.2, which needs Ubuntu 20.04+${NC}"
-        exit 1
+    # Check if running in interactive mode
+    if [ -t 0 ]; then
+        # Interactive - ask for confirmation
+        read -p "$(echo -e ${CYAN}Continue with Ubuntu upgrade? [y/N]: ${NC})" -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            log_error "Ubuntu upgrade cancelled by user"
+            echo -e "${RED}Installation cannot continue without Ubuntu upgrade.${NC}"
+            echo -e "${YELLOW}Laravel 12 requires PHP 8.2, which needs Ubuntu 20.04+${NC}"
+            exit 1
+        fi
+    else
+        # Non-interactive (piped from wget/curl) - auto-proceed
+        log_warning "Non-interactive mode detected - proceeding with automatic Ubuntu upgrade..."
+        echo -e "${CYAN}Automatically proceeding with Ubuntu upgrade in 10 seconds...${NC}"
+        echo -e "${CYAN}Press Ctrl+C now to cancel!${NC}"
+        sleep 10
     fi
 
     # Create upgrade marker for resuming after reboot
