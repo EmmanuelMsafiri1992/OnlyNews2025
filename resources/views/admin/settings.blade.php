@@ -618,6 +618,32 @@
                 });
             }
         });
+
+        // Network Settings - Toggle Static IP Fields
+        function toggleStaticFields() {
+            const staticIpRadio = document.getElementById('staticIp');
+            const staticIpFields = document.getElementById('staticIpFields');
+            const ipInputs = staticIpFields.querySelectorAll('input');
+
+            if (staticIpRadio.checked) {
+                staticIpFields.style.display = 'block';
+                ipInputs.forEach(input => {
+                    if (input.id !== 'network_dns_server') {
+                        input.setAttribute('required', 'required');
+                    }
+                });
+            } else {
+                staticIpFields.style.display = 'none';
+                ipInputs.forEach(input => {
+                    input.removeAttribute('required');
+                });
+            }
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            toggleStaticFields();
+        });
     </script>
 </body>
 
