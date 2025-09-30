@@ -34,7 +34,7 @@ export default {
   methods: {
     async fetchSettings() {
       try {
-        const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
+        const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || window.location.origin;
         const response = await axios.get(`${apiBaseUrl}/api/settings`);
         if (response.data) {
           if (response.data.footer_copyright_text) {

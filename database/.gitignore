@@ -1,1 +1,2 @@
-*.sqlite*
+# Keep database.sqlite for deployment
+!database.sqlite

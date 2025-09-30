@@ -15,7 +15,9 @@
       "Bash(curl -s http://127.0.0.1:8000/)",
       "Read(//c/laragon/www/bellapp/**)",
       "Read(//c/Users/eis-2/OneDrive/Desktop/**)",
-      "Read(//c/laragon/www/OnlyBell2025/**)"
+      "Read(//c/laragon/www/OnlyBell2025/**)",
+      "Bash(git add:*)",
+      "Bash(chmod:*)"
     ],
     "deny": [],
     "ask": []

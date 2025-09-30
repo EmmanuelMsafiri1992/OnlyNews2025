@@ -187,7 +187,7 @@ phase2_php_mysql_setup() {
     # Install PHP 8.2 and extensions
     log "Installing PHP 8.2 and extensions..."
     PHP_PACKAGES=(
-        "php8.2" "php8.2-cli" "php8.2-fpm" "php8.2-mysql" "php8.2-xml"
+        "php8.2" "php8.2-cli" "php8.2-fpm" "php8.2-sqlite3" "php8.2-mysql" "php8.2-xml"
         "php8.2-mbstring" "php8.2-curl" "php8.2-zip" "php8.2-gd"
         "php8.2-bcmath" "php8.2-intl" "php8.2-tokenizer"
     )
@@ -196,16 +196,7 @@ phase2_php_mysql_setup() {
         safe_run "apt-get install -y $package -qq" "Installing $package"
     done
 
-    # Install MySQL
-    log "Installing MySQL server..."
-    export DEBIAN_FRONTEND=noninteractive
-    safe_run "apt-get install -y mysql-server -qq" "Installing MySQL"
-
-    # Start MySQL
-    systemctl start mysql 2>/dev/null
-    systemctl enable mysql 2>/dev/null
-
-    log_success "✅ Phase 2 Complete: PHP & MySQL installed"
+    log_success "✅ Phase 2 Complete: PHP installed"
 }
 
 # PHASE 3: COMPOSER INSTALLATION
@@ -219,6 +210,9 @@ phase3_composer_installation() {
     retry_run "curl -sS https://getcomposer.org/installer -o composer-setup.php" "Downloading Composer" 3
     safe_run "php composer-setup.php --install-dir=/usr/local/bin --filename=composer" "Installing Composer"
     rm -f composer-setup.php
+
+    # Set PHP path in environment
+    export PATH="/usr/bin:$PATH"
 
     # Verify Composer
     if command -v composer >/dev/null 2>&1; then
@@ -281,22 +275,17 @@ phase5_clone_repository() {
 phase6_database_setup() {
     log_info "💾 PHASE 6: Database Configuration"
 
-    # Create database and user
-    log "Creating MySQL database and user..."
-
-    mysql -e "CREATE DATABASE IF NOT EXISTS $DB_NAME;" 2>/dev/null
-    mysql -e "CREATE USER IF NOT EXISTS '$DB_USER'@'localhost' IDENTIFIED BY '$DB_PASS';" 2>/dev/null
-    mysql -e "GRANT ALL PRIVILEGES ON $DB_NAME.* TO '$DB_USER'@'localhost';" 2>/dev/null
-    mysql -e "FLUSH PRIVILEGES;" 2>/dev/null
-
-    log "✅ Database created: $DB_NAME"
-    log "✅ User created: $DB_USER"
-
-    # Import SQL if exists
-    if [[ -f "$INSTALL_DIR/news.sql" ]]; then
-        log "Importing database schema..."
-        mysql "$DB_NAME" < "$INSTALL_DIR/news.sql" 2>/dev/null
-        log "✅ Database schema imported"
+    # Check if SQLite database exists in repository
+    if [[ -f "$INSTALL_DIR/database/database.sqlite" ]]; then
+        log "✅ SQLite database found in repository"
+        log "✅ Using SQLite database from repository"
+        chmod 664 "$INSTALL_DIR/database/database.sqlite"
+    else
+        # Create empty SQLite database
+        log "Creating SQLite database..."
+        touch "$INSTALL_DIR/database/database.sqlite"
+        chmod 664 "$INSTALL_DIR/database/database.sqlite"
+        log "✅ SQLite database created"
     fi
 
     log_success "✅ Phase 6 Complete: Database ready"
@@ -307,6 +296,9 @@ phase7_application_configuration() {
     log_info "⚙️ PHASE 7: Application Configuration"
 
     cd "$INSTALL_DIR"
+
+    # Ensure PHP is in PATH for all commands
+    export PATH="/usr/bin:/usr/local/bin:$PATH"
 
     # Create .env file
     log "Creating .env file..."
@@ -321,26 +313,31 @@ APP_KEY=
 APP_DEBUG=false
 APP_URL=http://localhost
 
-DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE=$DB_NAME
-DB_USERNAME=$DB_USER
-DB_PASSWORD=$DB_PASS
+DB_CONNECTION=sqlite
+DB_DATABASE=database/database.sqlite
+DB_FOREIGN_KEYS=true
 
-BROADCAST_DRIVER=log
-CACHE_DRIVER=file
-FILESYSTEM_DRIVER=local
-QUEUE_CONNECTION=sync
-SESSION_DRIVER=file
+SESSION_DRIVER=database
 SESSION_LIFETIME=120
+SESSION_ENCRYPT=false
+
+BROADCAST_CONNECTION=log
+CACHE_DRIVER=file
+FILESYSTEM_DISK=local
+QUEUE_CONNECTION=database
 EOF
     fi
 
-    # Update database credentials in .env
-    sed -i "s/DB_DATABASE=.*/DB_DATABASE=$DB_NAME/" .env
-    sed -i "s/DB_USERNAME=.*/DB_USERNAME=$DB_USER/" .env
-    sed -i "s/DB_PASSWORD=.*/DB_PASSWORD=$DB_PASS/" .env
+    # Get server IP for proper configuration
+    SERVER_IP=$(ip addr show | grep "inet " | grep -v 127.0.0.1 | head -1 | awk '{print $2}' | cut -d'/' -f1 2>/dev/null || echo "localhost")
+
+    # Update .env with proper URLs
+    sed -i "s|APP_URL=.*|APP_URL=http://$SERVER_IP:8000|" .env
+    sed -i "s|VITE_API_BASE_URL=.*|VITE_API_BASE_URL=http://$SERVER_IP:8000|" .env
+
+    # Ensure SQLite is configured
+    sed -i "s/DB_CONNECTION=.*/DB_CONNECTION=sqlite/" .env
+    sed -i "s|DB_DATABASE=.*|DB_DATABASE=database/database.sqlite|" .env
 
     log "✅ .env file configured"
 
@@ -350,11 +347,15 @@ EOF
 
     # Generate application key
     log "Generating application key..."
-    php artisan key:generate --force 2>/dev/null
+    /usr/bin/php artisan key:generate --force 2>/dev/null || php artisan key:generate --force 2>/dev/null
 
-    # Run migrations
-    log "Running database migrations..."
-    php artisan migrate --force 2>/dev/null
+    # Only run migrations if database is empty or new
+    if [[ ! -s "$INSTALL_DIR/database/database.sqlite" ]]; then
+        log "Running database migrations..."
+        /usr/bin/php artisan migrate --force 2>/dev/null || php artisan migrate --force 2>/dev/null
+    else
+        log "✅ Using existing database with data"
+    fi
 
     # Install NPM dependencies
     log "Installing NPM dependencies (this may take several minutes)..."
@@ -371,6 +372,9 @@ EOF
     chmod -R 775 "$INSTALL_DIR/storage"
     chmod -R 775 "$INSTALL_DIR/bootstrap/cache"
 
+    # Make IP update script executable
+    chmod +x "$INSTALL_DIR/check-and-update-ip.sh"
+
     log_success "✅ Phase 7 Complete: Application configured"
 }
 
@@ -384,8 +388,7 @@ phase8_systemd_service() {
 [Unit]
 Description=NewsApp Laravel Application
 Documentation=https://laravel.com/docs
-After=network.target mysql.service
-Requires=mysql.service
+After=network.target
 
 [Service]
 Type=simple
@@ -428,10 +431,46 @@ SyslogIdentifier=newsapp-vite
 WantedBy=multi-user.target
 EOF
 
+    # Create IP monitor systemd service
+    log "Creating IP monitor systemd service..."
+    cat > /etc/systemd/system/newsapp-ip-monitor.service << 'EOF'
+[Unit]
+Description=NewsApp IP Monitor Service
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/opt/newsapp/check-and-update-ip.sh
+User=root
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+    # Create IP monitor timer (runs every 5 minutes)
+    log "Creating IP monitor timer..."
+    cat > /etc/systemd/system/newsapp-ip-monitor.timer << 'EOF'
+[Unit]
+Description=NewsApp IP Monitor Timer
+Requires=newsapp-ip-monitor.service
+
+[Timer]
+OnBootSec=1min
+OnUnitActiveSec=5min
+AccuracySec=1min
+
+[Install]
+WantedBy=timers.target
+EOF
+
     # Enable and start services
     systemctl daemon-reload
     systemctl enable newsapp
     systemctl enable newsapp-vite
+    systemctl enable newsapp-ip-monitor.timer
+    systemctl start newsapp-ip-monitor.timer
 
     log_success "✅ Phase 8 Complete: Systemd services configured"
 }
@@ -463,6 +502,16 @@ phase9_service_startup() {
         log_warning "⚠️ Vite service: FAILED TO START"
     fi
 
+    if systemctl is-active newsapp-ip-monitor.timer >/dev/null 2>&1; then
+        log_success "✅ IP Monitor: ACTIVE (checks every 5 minutes)"
+    else
+        log_warning "⚠️ IP Monitor: INACTIVE"
+    fi
+
+    # Run IP update script immediately
+    log "Running initial IP configuration..."
+    "$INSTALL_DIR/check-and-update-ip.sh"
+
     # Test web interface
     log "Testing web interface..."
     sleep 5
@@ -483,6 +532,9 @@ final_completion() {
     # Get system IP
     IP_ADDRESS=$(ip addr show | grep "inet " | grep -v 127.0.0.1 | head -1 | awk '{print $2}' | cut -d'/' -f1 2>/dev/null || echo "localhost")
 
+    # Verify PHP path
+    export PATH="/usr/bin:/usr/local/bin:$PATH"
+
     # Create completion file
     cat > "$INSTALL_DIR/INSTALLATION_COMPLETE.txt" << EOF
 🎉 NEWSAPP ONE-COMMAND INSTALLATION SUCCESSFUL! 🎉
@@ -490,7 +542,7 @@ final_completion() {
 
 🕐 Installation completed: $(date)
 🖥️  System: $(uname -a)
-🐘 PHP version: $(php --version | head -1)
+🐘 PHP version: $(/usr/bin/php --version 2>/dev/null | head -1 || echo "PHP 8.2 installed")
 📍 Installation directory: $INSTALL_DIR
 📝 Complete log: $LOG_FILE
 
@@ -499,10 +551,9 @@ final_completion() {
    Local access:  http://localhost:8000
    Vite dev:      http://$IP_ADDRESS:5173
 
-🔐 DATABASE CREDENTIALS:
-   Database:      $DB_NAME
-   Username:      $DB_USER
-   Password:      $DB_PASS
+🔐 DATABASE:
+   Type:          SQLite
+   Location:      $INSTALL_DIR/database/database.sqlite
 
 🔧 SYSTEM MANAGEMENT COMMANDS:
    Service status:    sudo systemctl status newsapp
@@ -510,6 +561,8 @@ final_completion() {
    Stop service:      sudo systemctl stop newsapp
    View logs:         sudo journalctl -u newsapp -f
    Vite status:       sudo systemctl status newsapp-vite
+   IP Monitor:        sudo systemctl status newsapp-ip-monitor.timer
+   Manual IP update:  sudo $INSTALL_DIR/check-and-update-ip.sh
 
 🔄 FUTURE UPDATES:
    cd $INSTALL_DIR
@@ -529,10 +582,7 @@ EOF
     echo -e "${GREEN}║                                                                           ║${NC}"
     echo -e "${GREEN}║  🌐 Access your system at: ${CYAN}http://$IP_ADDRESS:8000${GREEN}                       ║${NC}"
     echo -e "${GREEN}║                                                                           ║${NC}"
-    echo -e "${GREEN}║  🔐 Database Credentials:                                                 ║${NC}"
-    echo -e "${GREEN}║     Database: $DB_NAME                                                   ║${NC}"
-    echo -e "${GREEN}║     Username: $DB_USER                                              ║${NC}"
-    echo -e "${GREEN}║     Password: $DB_PASS                                        ║${NC}"
+    echo -e "${GREEN}║  🔐 Database: SQLite (database/database.sqlite)                           ║${NC}"
     echo -e "${GREEN}║                                                                           ║${NC}"
     echo -e "${GREEN}║  📝 Documentation: $INSTALL_DIR/INSTALLATION_COMPLETE.txt           ║${NC}"
     echo -e "${GREEN}║  📊 Installation log: $LOG_FILE                     ║${NC}"

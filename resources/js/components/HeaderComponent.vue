@@ -41,7 +41,7 @@ export default {
     },
     async fetchSettings() {
       try {
-        const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
+        const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || window.location.origin;
         const response = await axios.get(`${apiBaseUrl}/api/settings`);
         if (response.data && response.data.header_title) {
           this.headerTitle = response.data.header_title;
