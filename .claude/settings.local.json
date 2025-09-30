@@ -13,7 +13,9 @@
       "Bash(npm run build:*)",
       "Bash(php artisan:*)",
       "Bash(curl -s http://127.0.0.1:8000/)",
-      "Read(//c/laragon/www/bellapp/**)"
+      "Read(//c/laragon/www/bellapp/**)",
+      "Read(//c/Users/eis-2/OneDrive/Desktop/**)",
+      "Read(//c/laragon/www/OnlyBell2025/**)"
     ],
     "deny": [],
     "ask": []
