@@ -16,10 +16,7 @@ return [
      * The list of origins that can make CORS requests.
      * You will need to add your Vue.js frontend's URL here.
      */
-    'allowed_origins' => [
-        'http://localhost:8000', // Already likely present or implied for 127.0.0.1
-        'http://192.168.33.3:8000',
-    ],
+    'allowed_origins' => ['*'],
 
     /*
      * The list of headers that are allowed to be sent with CORS requests.

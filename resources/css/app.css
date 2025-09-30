@@ -1,6 +1,3 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-/* Import TV browser compatibility styles */
-@import './tv-styles.css';

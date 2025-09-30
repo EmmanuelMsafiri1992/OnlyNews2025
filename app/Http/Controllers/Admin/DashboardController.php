@@ -14,7 +14,6 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\App;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log; // Ensure Log facade is imported
-use App\Services\NetworkManager;
 
 class DashboardController extends Controller
 {
@@ -237,83 +236,5 @@ class DashboardController extends Controller
         );
 
         return redirect()->route('admin.settings')->with('success', __('Footer settings updated successfully!'));
-    }
-
-    /**
-     * Get current network configuration for display
-     */
-    public function getNetworkSettings()
-    {
-        // Only allow superadmins to access network settings
-        if (!Auth::user()->isSuperAdmin()) {
-            abort(403, __('Unauthorized action.'));
-        }
-
-        $networkManager = new NetworkManager();
-        $networkConfig = $networkManager->getCurrentNetworkConfig();
-
-        return response()->json([
-            'success' => true,
-            'data' => $networkConfig
-        ]);
-    }
-
-    /**
-     * Update network settings (DHCP/Static IP)
-     */
-    public function updateNetworkSettings(Request $request)
-    {
-        // Only allow superadmins to modify network settings
-        if (!Auth::user()->isSuperAdmin()) {
-            abort(403, __('Unauthorized action.'));
-        }
-
-        $request->validate([
-            'mode' => 'required|in:dhcp,static',
-            'interface' => 'required|string|max:20',
-            'ip_address' => 'required_if:mode,static|nullable|ip',
-            'subnet_mask' => 'required_if:mode,static|nullable|string',
-            'gateway' => 'required_if:mode,static|nullable|ip',
-            'dns_server' => 'required_if:mode,static|nullable|ip',
-        ], [
-            'ip_address.required_if' => 'IP address is required for static configuration.',
-            'gateway.required_if' => 'Gateway is required for static configuration.',
-            'dns_server.required_if' => 'DNS server is required for static configuration.',
-        ]);
-
-        try {
-            $networkManager = new NetworkManager();
-            $result = $networkManager->applyNetworkSettings($request->all());
-
-            if ($result['success']) {
-                // Store network settings in database for display
-                Setting::updateOrCreate(['key' => 'network_mode'], ['value' => $request->mode]);
-                if ($request->mode === 'static') {
-                    Setting::updateOrCreate(['key' => 'static_ip'], ['value' => $request->ip_address]);
-                    Setting::updateOrCreate(['key' => 'static_gateway'], ['value' => $request->gateway]);
-                    Setting::updateOrCreate(['key' => 'static_dns'], ['value' => $request->dns_server]);
-                }
-
-                Log::info('Network settings updated successfully', [
-                    'user' => Auth::user()->name,
-                    'mode' => $request->mode,
-                    'ip' => $request->ip_address ?? 'DHCP'
-                ]);
-
-                return redirect()->route('admin.settings')
-                    ->with('success', __('Network settings updated successfully! New IP: ') . ($result['new_ip'] ?? 'DHCP'));
-            } else {
-                return redirect()->route('admin.settings')
-                    ->with('error', __('Failed to update network settings: ') . $result['message']);
-            }
-        } catch (\Exception $e) {
-            Log::error('Network settings update failed', [
-                'error' => $e->getMessage(),
-                'user' => Auth::user()->name
-            ]);
-
-            return redirect()->route('admin.settings')
-                ->with('error', __('Failed to update network settings. Please try again.'));
-        }
     }
 }

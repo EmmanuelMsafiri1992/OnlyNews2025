@@ -72,10 +72,6 @@ Route::prefix('admin')->middleware(['auth', SetAdminLocale::class])->group(funct
         Route::delete('/licenses/{license}', [LicenseController::class, 'destroy'])->name('admin.licenses.destroy');
             // New route for Slider settings - ADD THIS LINE
         Route::post('/settings/slider', [DashboardController::class, 'updateSliderSettings'])->name('admin.settings.slider');
-
-        // Network Management Routes (Superadmin only)
-        Route::get('/settings/network', [DashboardController::class, 'getNetworkSettings'])->name('admin.settings.network.get');
-        Route::post('/settings/network', [DashboardController::class, 'updateNetworkSettings'])->name('admin.settings.network');
        // User Management
        Route::resource('users', App\Http\Controllers\Admin\UserController::class, ['as' => 'admin'])->except(['show', 'update']);
        Route::put('/users/{user}/password', [App\Http\Controllers\Admin\UserController::class, 'updatePassword'])->name('admin.users.updatePassword');

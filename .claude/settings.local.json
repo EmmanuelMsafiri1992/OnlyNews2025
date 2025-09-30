@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -s ifconfig.me)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(taskkill:*)",
+      "Bash(php artisan serve:*)",
+      "Bash(curl -v http://156.155.199.108:8000/api/settings)",
+      "Bash(curl -s http://127.0.0.1:8000/api/settings)",
+      "Bash(netsh:*)",
+      "Bash(ipconfig)",
+      "Bash(npm run build:*)",
+      "Bash(php artisan:*)",
+      "Bash(curl -s http://127.0.0.1:8000/)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

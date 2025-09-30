@@ -10,7 +10,7 @@
         <a href="#" class="hover:text-gray-300 transition-colors duration-300 text-base sm:text-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75 rounded px-2 py-1">
           {{ $t('home') }}
         </a>
-        <a href="/login" class="hover:text-gray-300 transition-colors duration-300 text-base sm:text-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75 rounded px-2 py-1">
+        <a href="/login" @click="handleLoginClick" class="hover:text-gray-300 transition-colors duration-300 text-base sm:text-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75 rounded px-2 py-1">
           {{ $t('login') }}
         </a>
       </nav>
@@ -30,6 +30,11 @@ export default {
     };
   },
   methods: {
+    handleLoginClick(event) {
+      // Allow the default link behavior - full page navigation
+      // Don't prevent default, let the browser handle it naturally
+      console.log('Login link clicked, navigating to /login');
+    },
     saveLocale() {
       localStorage.setItem('locale', this.$i18n.locale);
       // Trigger a re-render or re-evaluation of RTL class in App.vue

@@ -137,39 +137,20 @@ export default {
             return null;
         }).filter(Boolean);
     },
-    fetchSettings: function() {
-        var self = this;
-        return new Promise(function(resolve, reject) {
-            try {
-                var apiBaseUrl = self.getApiBaseUrl();
-                
-                // Use TV-compatible fetch
-                window.fetch(apiBaseUrl + '/api/settings', {
-                    method: 'GET',
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json'
-                    },
-                    timeout: 8000
-                }).then(function(response) {
-                    if (!response.ok) {
-                        throw new Error('Failed to fetch settings');
-                    }
-                    return response.json();
-                }).then(function(settings) {
-                    if (settings && settings.slider_display_time) {
-                        self.slideInterval = parseInt(settings.slider_display_time, 10) * 1000;
-                    }
-                    resolve(settings);
-                }).catch(function(error) {
-                    console.error('Could not fetch settings:', error);
-                    resolve({}); // Don't fail completely, just use defaults
-                });
-            } catch (error) {
-                console.error('Settings fetch error:', error);
-                resolve({}); // Don't fail completely
+    async fetchSettings() {
+        try {
+            const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
+            const response = await fetch(`${apiBaseUrl}/api/settings`);
+            if (!response.ok) {
+                throw new Error('Failed to fetch settings');
             }
-        });
+            const settings = await response.json();
+            if (settings.slider_display_time) {
+                this.slideInterval = parseInt(settings.slider_display_time, 10) * 1000;
+            }
+        } catch (error) {
+            console.error('Could not fetch settings:', error);
+        }
     },
     createFallbackNewsItem(index) {
       return {
@@ -251,202 +232,62 @@ export default {
         }
       });
     },
-    fetchNews: function() {
-      var self = this;
-      var maxRetries = 3;
-      var baseDelay = 1000;
-      var apiBaseUrl = this.getApiBaseUrl();
-                      
-      return new Promise(function(resolve, reject) {
-        function attemptFetch(attempt) {
-          try {
-            // TV-compatible fetch with simplified controller
-            var timeoutId = setTimeout(function() {
-              console.warn('Request timeout after 10 seconds');
-            }, 10000);
-            
-            window.fetch(apiBaseUrl + '/api/news', {
-              method: 'GET',
-              headers: { 
-                'Accept': 'application/json', 
-                'Content-Type': 'application/json', 
-                'Cache-Control': 'no-cache', 
-                'Pragma': 'no-cache' 
-              },
-              timeout: 10000
-            }).then(function(response) {
-              clearTimeout(timeoutId);
-              if (!response.ok) {
-                throw new Error('HTTP ' + response.status + ': ' + response.statusText);
-              }
-              return response.json();
-            }).then(function(data) {
-              // Handle different response formats
-              if (data && data.success && Array.isArray(data.data)) {
-                self.newsItems = data.data;
-              } else if (Array.isArray(data)) {
-                self.newsItems = data;
-              } else {
-                throw new Error('Invalid data format');
-              }
-              
-              self.error = null;
-              self.retryCount = 0;
-              
-              // TV-safe nextTick replacement
-              setTimeout(function() {
-                self.preloadImages();
-              }, 10);
-              
-              resolve(data);
-            }).catch(function(error) {
-              console.error('Fetch attempt ' + (attempt + 1) + ' failed:', error.message);
-              
-              if (attempt >= maxRetries - 1) {
-                self.error = 'Failed to load news after ' + maxRetries + ' attempts';
-                self.newsItems = [];
-                resolve([]); // Don't reject, just resolve with empty data
-                return;
-              }
-              
-              // Exponential backoff with TV-safe setTimeout
-              var delay = baseDelay * Math.pow(2, attempt);
-              setTimeout(function() {
-                attemptFetch(attempt + 1);
-              }, delay);
-            });
-          } catch (error) {
-            console.error('Fetch setup error:', error);
-            if (attempt >= maxRetries - 1) {
-              self.error = 'Failed to setup request';
-              self.newsItems = [];
-              resolve([]);
-            } else {
-              setTimeout(function() {
-                attemptFetch(attempt + 1);
-              }, baseDelay);
-            }
+    async fetchNews() {
+      const maxRetries = 3;
+      const baseDelay = 1000;
+      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
+      for (let attempt = 0; attempt < maxRetries; attempt++) {
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 8000); // 8-second timeout
+          const response = await fetch(`${apiBaseUrl}/api/news`, {
+            method: 'GET',
+            headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' },
+            signal: controller.signal
+          });
+          clearTimeout(timeoutId);
+          if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          const data = await response.json();
+          if (data?.success && Array.isArray(data.data)) {
+            this.newsItems = data.data;
+          } else if (Array.isArray(data)) {
+            this.newsItems = data; // Fallback for direct array response
+          } else {
+            throw new Error('Invalid data format');
           }
+          this.error = null; // Clear any previous errors
+          this.retryCount = 0; // Reset retry count on success
+          this.$nextTick(() => this.preloadImages()); // Preload images after data is set
+          return; // Exit loop on success
+        } catch (error) {
+          console.error(`Fetch attempt ${attempt + 1} failed:`, error.message);
+          if (attempt === maxRetries - 1) {
+            this.error = `Failed to load news after ${maxRetries} attempts`;
+            this.newsItems = []; // Clear news items on final failure
+            return; // Exit loop after last attempt
+          }
+          const delay = baseDelay * Math.pow(2, attempt); // Exponential backoff
+          await new Promise(resolve => setTimeout(resolve, delay));
         }
-        
-        attemptFetch(0);
-      });
-    },
-    getApiBaseUrl: function() {
-      // Priority order for getting API base URL:
-      // 1. Dynamic IP Manager (if available)
-      // 2. Environment variables
-      // 3. Current browser location
-      // 4. Fallback to localhost
-      
-      if (window.IPManager && window.IPManager.getBaseURL) {
-        var dynamicURL = window.IPManager.getBaseURL();
-        if (dynamicURL && dynamicURL !== 'http://localhost:8000') {
-          return dynamicURL;
-        }
-      }
-      
-      // Try environment variables
-      var envURL = window.ENV_API_BASE_URL;
-      if (envURL) {
-        return envURL;
-      }
-      
-      // Try current browser location
-      if (window.location.hostname && window.location.hostname !== 'localhost') {
-        var protocol = window.location.protocol || 'http:';
-        return protocol + '//' + window.location.hostname + ':8000';
-      }
-      
-      // Final fallback
-      return 'http://127.0.0.1:8000';
-    },
-    handleIPChange: function(newHost, newPort, newBaseURL) {
-      console.log('IP changed to:', newBaseURL);
-      
-      // Update any cached URLs or configurations
-      this.error = null;
-      
-      // Refresh data with new IP
-      this.fetchNews();
-      this.fetchSettings();
-      
-      // Show user notification if needed
-      this.$nextTick(function() {
-        console.log('Reconnected to server at:', newBaseURL);
-      });
-    },
-    handleNetworkRecovery: function(event, reason) {
-      var self = this;
-      
-      switch(event) {
-        case 'start':
-          console.log('Network recovery started:', reason);
-          this.error = 'Connection lost, attempting to reconnect...';
-          break;
-          
-        case 'success':
-          console.log('Network recovery successful');
-          this.error = null;
-          // Refresh data after successful recovery
-          setTimeout(function() {
-            self.fetchNews();
-            self.fetchSettings();
-          }, 1000);
-          break;
-          
-        case 'failed':
-          console.log('Network recovery failed');
-          this.error = 'Unable to connect to server. Please check your network connection.';
-          break;
       }
     },
   },
-  mounted: function() {
-    var self = this;
+  async mounted() {
     console.log('App mounted, starting data fetch...');
     this.loading = true;
-    
-    // Set up IP change listener
-    if (window.IPManager) {
-      window.IPManager.onIPChange(function(host, port, baseURL) {
-        self.handleIPChange(host, port, baseURL);
-      });
+    try {
+      // Fetch settings and news concurrently
+      await Promise.all([this.fetchSettings(), this.fetchNews()]);
+      if (this.processedNewsItems.length > 1) {
+        this.startAutoSlide();
+      }
+    } finally {
+      this.loading = false;
     }
-    
-    // Set up network recovery listener
-    if (window.NetworkRecovery) {
-      window.NetworkRecovery.onRecovery(function(event, reason) {
-        self.handleNetworkRecovery(event, reason);
-      });
-    }
-    
-    // Wait for IP detection to complete before fetching data
-    var initializeApp = function() {
-      Promise.all([self.fetchSettings(), self.fetchNews()]).then(function() {
-        if (self.processedNewsItems.length > 1) {
-          self.startAutoSlide();
-        }
-      }).catch(function(error) {
-        console.error('Error during app initialization:', error);
-      }).finally(function() {
-        self.loading = false;
-      });
-    };
-    
-    // Wait for IP Manager or start immediately
-    if (window.IPManager && !window.IPManager.currentIP) {
-      setTimeout(function() {
-        initializeApp();
-      }, 2000); // Wait 2 seconds for IP detection
-    } else {
-      initializeApp();
-    }
-    
-    // Set up refresh interval for news and settings with TV-safe interval
-    this.refreshInterval = setInterval(function() {
-      self.fetchNews();
-      self.fetchSettings();
+    // Set up refresh interval for news and settings
+    this.refreshInterval = setInterval(() => {
+      this.fetchNews();
+      this.fetchSettings();
     }, 5 * 60 * 1000); // Refresh every 5 minutes
   },
   beforeUnmount() {
