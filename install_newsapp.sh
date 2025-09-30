@@ -1,7 +1,7 @@
 #!/bin/bash
-# NewsApp One-Command Installer
+# NewsApp One-Command Installer - COMPATIBLE WITH UBUNTU 16.04+
 # Complete setup from fresh NanoPi to working Laravel + Vue system
-# Usage: curl -sSL https://raw.githubusercontent.com/EmmanuelMsafiri1992/OnlyNews2025/main/install_newsapp.sh | bash
+# Usage: wget -qO- https://raw.githubusercontent.com/EmmanuelMsafiri1992/OnlyNews2025/main/install_newsapp.sh | sudo bash
 
 # DO NOT USE set -e - we want to handle errors gracefully
 
@@ -16,9 +16,6 @@ NC='\033[0m'
 REPO_URL="https://github.com/EmmanuelMsafiri1992/OnlyNews2025.git"
 INSTALL_DIR="/opt/newsapp"
 LOG_FILE="/tmp/newsapp_complete_install.log"
-DB_NAME="news_db"
-DB_USER="newsapp_user"
-DB_PASS=$(openssl rand -base64 12)
 
 # Initialize log file
 echo "NewsApp Installation Started: $(date)" > "$LOG_FILE"
@@ -27,7 +24,7 @@ echo -e "${PURPLE}╔═══════════════════�
 echo -e "${PURPLE}║          🚀 NEWSAPP ONE-COMMAND INSTALLER 🚀                ║${NC}"
 echo -e "${PURPLE}║                                                              ║${NC}"
 echo -e "${PURPLE}║  Fresh NanoPi → Fully Working Laravel + Vue News System    ║${NC}"
-echo -e "${PURPLE}║  Everything automated in a single command!                  ║${NC}"
+echo -e "${PURPLE}║  Compatible with Ubuntu 16.04+ and ARM architecture        ║${NC}"
 echo -e "${PURPLE}║                                                              ║${NC}"
 echo -e "${PURPLE}╚══════════════════════════════════════════════════════════════╝${NC}"
 echo
@@ -71,7 +68,7 @@ safe_run() {
     local description="$2"
 
     log_info "$description"
-    if eval "$cmd" 2>/dev/null; then
+    if eval "$cmd" >> "$LOG_FILE" 2>&1; then
         log "✅ Success: $description"
         return 0
     else
@@ -88,7 +85,7 @@ retry_run() {
 
     for ((i=1; i<=max_attempts; i++)); do
         log_info "Attempt $i/$max_attempts: $description"
-        if eval "$cmd" 2>/dev/null; then
+        if eval "$cmd" >> "$LOG_FILE" 2>&1; then
             log "✅ Success on attempt $i: $description"
             return 0
         else
@@ -105,9 +102,57 @@ retry_run() {
 check_root() {
     if [[ $EUID -ne 0 ]]; then
         echo -e "${RED}This script must be run as root (use sudo)${NC}"
-        echo -e "${YELLOW}Usage: curl -sSL https://raw.githubusercontent.com/EmmanuelMsafiri1992/OnlyNews2025/main/install_newsapp.sh | sudo bash${NC}"
+        echo -e "${YELLOW}Usage: wget -qO- https://raw.githubusercontent.com/EmmanuelMsafiri1992/OnlyNews2025/main/install_newsapp.sh | sudo bash${NC}"
         exit 1
     fi
+}
+
+# Detect OS and set PHP version
+detect_os_and_php_version() {
+    log_info "🔍 Detecting OS version and architecture..."
+
+    if [ -f /etc/os-release ]; then
+        . /etc/os-release
+        OS_NAME=$NAME
+        OS_VERSION=$VERSION_ID
+        OS_CODENAME=$VERSION_CODENAME
+
+        log "OS Detected: $OS_NAME $OS_VERSION ($OS_CODENAME)"
+        log "Architecture: $(uname -m)"
+    fi
+
+    # Determine PHP version based on Ubuntu version
+    case "$OS_CODENAME" in
+        xenial)  # Ubuntu 16.04
+            PHP_VERSION="7.4"
+            USE_PPA=true
+            log "Using PHP 7.4 for Ubuntu 16.04 compatibility"
+            ;;
+        bionic)  # Ubuntu 18.04
+            PHP_VERSION="7.4"
+            USE_PPA=true
+            log "Using PHP 7.4 for Ubuntu 18.04"
+            ;;
+        focal)   # Ubuntu 20.04
+            PHP_VERSION="8.1"
+            USE_PPA=true
+            log "Using PHP 8.1 for Ubuntu 20.04"
+            ;;
+        jammy|lunar|mantic)  # Ubuntu 22.04+
+            PHP_VERSION="8.2"
+            USE_PPA=true
+            log "Using PHP 8.2 for modern Ubuntu"
+            ;;
+        *)
+            # Default to system PHP
+            PHP_VERSION="7.0"
+            USE_PPA=false
+            log_warning "Unknown OS codename, using system default PHP"
+            ;;
+    esac
+
+    export PHP_VERSION
+    export USE_PPA
 }
 
 # PHASE 0: COMPLETE SYSTEM CLEANUP
@@ -117,7 +162,7 @@ phase0_complete_cleanup() {
     # Stop all running processes
     log "Stopping all NewsApp processes..."
 
-    pkill -9 -f "php artisan serve" 2>/dev/null || true
+    pkill -9 -f "php.*artisan.*serve" 2>/dev/null || true
     pkill -9 -f "vite" 2>/dev/null || true
     pkill -9 -f "newsapp" 2>/dev/null || true
 
@@ -130,20 +175,24 @@ phase0_complete_cleanup() {
     systemctl disable newsapp 2>/dev/null || true
     systemctl stop newsapp-vite 2>/dev/null || true
     systemctl disable newsapp-vite 2>/dev/null || true
+    systemctl stop newsapp-ip-monitor.timer 2>/dev/null || true
+    systemctl disable newsapp-ip-monitor.timer 2>/dev/null || true
 
     # Remove systemd service files
     log "Removing systemd service files..."
 
     rm -f /etc/systemd/system/newsapp.service 2>/dev/null || true
     rm -f /etc/systemd/system/newsapp-vite.service 2>/dev/null || true
+    rm -f /etc/systemd/system/newsapp-ip-monitor.service 2>/dev/null || true
+    rm -f /etc/systemd/system/newsapp-ip-monitor.timer 2>/dev/null || true
     systemctl daemon-reload 2>/dev/null
 
-    # Remove installation directories
-    log "Removing previous installation directories..."
-
+    # Backup installation directory if exists
     if [[ -d "$INSTALL_DIR" ]]; then
-        SPACE=$(du -sh "$INSTALL_DIR" 2>/dev/null | awk '{print $1}')
-        rm -rf "$INSTALL_DIR" 2>/dev/null && log "  ✅ Removed $INSTALL_DIR (freed $SPACE)"
+        BACKUP_DIR="/opt/newsapp_backup_$(date +%Y%m%d_%H%M%S)"
+        log "Backing up existing installation to $BACKUP_DIR"
+        cp -r "$INSTALL_DIR" "$BACKUP_DIR" 2>/dev/null || true
+        rm -rf "$INSTALL_DIR" 2>/dev/null || true
     fi
 
     # Clean temporary directories
@@ -159,42 +208,74 @@ phase1_system_preparation() {
 
     # Update system packages
     log "Updating system package list..."
-    retry_run "apt-get update -qq" "System package update" 5
+    retry_run "apt-get update" "System package update" 5
 
     # Install essential system tools
     log "Installing essential system tools..."
     ESSENTIAL_TOOLS=(
-        "curl" "wget" "git" "unzip" "sudo" "systemd"
-        "build-essential" "pkg-config" "software-properties-common"
+        "curl" "wget" "git" "unzip" "sudo" "ca-certificates"
+        "build-essential" "software-properties-common"
     )
 
     for tool in "${ESSENTIAL_TOOLS[@]}"; do
-        safe_run "apt-get install -y $tool -qq" "Installing $tool"
+        safe_run "apt-get install -y $tool" "Installing $tool"
     done
 
     log_success "✅ Phase 1 Complete: System prepared"
 }
 
-# PHASE 2: PHP & MYSQL INSTALLATION
-phase2_php_mysql_setup() {
-    log_info "🐘 PHASE 2: PHP & MySQL Environment Setup"
+# PHASE 2: PHP INSTALLATION
+phase2_php_installation() {
+    log_info "🐘 PHASE 2: PHP Environment Setup"
 
-    # Add PHP repository
-    log "Adding PHP repository..."
-    retry_run "add-apt-repository -y ppa:ondrej/php" "Adding PHP PPA" 3
-    retry_run "apt-get update -qq" "Updating after PPA" 3
+    # Add PHP repository if needed
+    if [ "$USE_PPA" = true ]; then
+        log "Adding PHP repository for PHP $PHP_VERSION..."
+        safe_run "add-apt-repository -y ppa:ondrej/php" "Adding PHP PPA"
+        retry_run "apt-get update" "Updating after PPA" 3
+    fi
 
-    # Install PHP 8.2 and extensions
-    log "Installing PHP 8.2 and extensions..."
+    # Install PHP and extensions
+    log "Installing PHP $PHP_VERSION and extensions..."
+
+    # Build package list dynamically
     PHP_PACKAGES=(
-        "php8.2" "php8.2-cli" "php8.2-fpm" "php8.2-sqlite3" "php8.2-mysql" "php8.2-xml"
-        "php8.2-mbstring" "php8.2-curl" "php8.2-zip" "php8.2-gd"
-        "php8.2-bcmath" "php8.2-intl" "php8.2-tokenizer"
+        "php${PHP_VERSION}"
+        "php${PHP_VERSION}-cli"
+        "php${PHP_VERSION}-sqlite3"
+        "php${PHP_VERSION}-xml"
+        "php${PHP_VERSION}-mbstring"
+        "php${PHP_VERSION}-curl"
+        "php${PHP_VERSION}-zip"
+        "php${PHP_VERSION}-gd"
+        "php${PHP_VERSION}-bcmath"
     )
 
+    # Add tokenizer if available (not in older PHP versions)
+    if dpkg --compare-versions "$PHP_VERSION" ge "7.2"; then
+        PHP_PACKAGES+=("php${PHP_VERSION}-tokenizer")
+    fi
+
+    # Add intl if available
+    PHP_PACKAGES+=("php${PHP_VERSION}-intl")
+
     for package in "${PHP_PACKAGES[@]}"; do
-        safe_run "apt-get install -y $package -qq" "Installing $package"
+        safe_run "DEBIAN_FRONTEND=noninteractive apt-get install -y $package" "Installing $package"
     done
+
+    # Create symlink for php command if needed
+    if [ ! -f /usr/bin/php ]; then
+        log "Creating PHP symlink..."
+        ln -s /usr/bin/php${PHP_VERSION} /usr/bin/php 2>/dev/null || true
+    fi
+
+    # Verify PHP installation
+    if command -v php >/dev/null 2>&1; then
+        PHP_INSTALLED_VERSION=$(php --version | head -1)
+        log "✅ PHP installed: $PHP_INSTALLED_VERSION"
+    else
+        log_error "❌ PHP installation failed!"
+    fi
 
     log_success "✅ Phase 2 Complete: PHP installed"
 }
@@ -207,7 +288,7 @@ phase3_composer_installation() {
     log "Installing Composer..."
 
     cd /tmp
-    retry_run "curl -sS https://getcomposer.org/installer -o composer-setup.php" "Downloading Composer" 3
+    retry_run "wget https://getcomposer.org/installer -O composer-setup.php" "Downloading Composer" 3
     safe_run "php composer-setup.php --install-dir=/usr/local/bin --filename=composer" "Installing Composer"
     rm -f composer-setup.php
 
@@ -216,7 +297,7 @@ phase3_composer_installation() {
 
     # Verify Composer
     if command -v composer >/dev/null 2>&1; then
-        log "✅ Composer installed: $(composer --version)"
+        log "✅ Composer installed: $(composer --version 2>/dev/null | head -1)"
     else
         log_error "❌ Composer installation failed"
     fi
@@ -228,11 +309,11 @@ phase3_composer_installation() {
 phase4_nodejs_installation() {
     log_info "📦 PHASE 4: Node.js & NPM Installation"
 
-    # Install Node.js 20.x
-    log "Installing Node.js 20.x..."
+    # Install Node.js 16.x (compatible with Ubuntu 16.04)
+    log "Installing Node.js 16.x for ARM compatibility..."
 
-    retry_run "curl -fsSL https://deb.nodesource.com/setup_20.x | bash -" "Adding NodeSource repository" 3
-    safe_run "apt-get install -y nodejs -qq" "Installing Node.js"
+    retry_run "curl -fsSL https://deb.nodesource.com/setup_16.x | bash -" "Adding NodeSource repository" 3
+    safe_run "apt-get install -y nodejs" "Installing Node.js"
 
     # Verify installations
     if command -v node >/dev/null 2>&1; then
@@ -261,6 +342,8 @@ phase5_clone_repository() {
 
     if [[ -d "/tmp/newsapp-temp" ]]; then
         cp -r /tmp/newsapp-temp/* "$INSTALL_DIR/"
+        cp -r /tmp/newsapp-temp/.env* "$INSTALL_DIR/" 2>/dev/null || true
+        cp -r /tmp/newsapp-temp/.git* "$INSTALL_DIR/" 2>/dev/null || true
         rm -rf /tmp/newsapp-temp
         log "✅ Repository files copied to $INSTALL_DIR"
     else
@@ -306,7 +389,7 @@ phase7_application_configuration() {
     if [[ -f ".env.example" ]]; then
         cp .env.example .env
     else
-        cat > .env << EOF
+        cat > .env << 'EOF'
 APP_NAME=NewsApp
 APP_ENV=production
 APP_KEY=
@@ -333,7 +416,13 @@ EOF
 
     # Update .env with proper URLs
     sed -i "s|APP_URL=.*|APP_URL=http://$SERVER_IP:8000|" .env
-    sed -i "s|VITE_API_BASE_URL=.*|VITE_API_BASE_URL=http://$SERVER_IP:8000|" .env
+
+    # Add VITE_API_BASE_URL if not exists
+    if grep -q "^VITE_API_BASE_URL=" .env; then
+        sed -i "s|VITE_API_BASE_URL=.*|VITE_API_BASE_URL=http://$SERVER_IP:8000|" .env
+    else
+        echo "VITE_API_BASE_URL=http://$SERVER_IP:8000" >> .env
+    fi
 
     # Ensure SQLite is configured
     sed -i "s/DB_CONNECTION=.*/DB_CONNECTION=sqlite/" .env
@@ -342,28 +431,29 @@ EOF
     log "✅ .env file configured"
 
     # Install Composer dependencies
-    log "Installing Composer dependencies (this may take a few minutes)..."
-    retry_run "composer install --no-dev --optimize-autoloader --quiet" "Composer install" 3
+    log "Installing Composer dependencies (this may take several minutes)..."
+    export COMPOSER_ALLOW_SUPERUSER=1
+    retry_run "composer install --no-dev --optimize-autoloader --no-interaction" "Composer install" 3
 
     # Generate application key
     log "Generating application key..."
-    /usr/bin/php artisan key:generate --force 2>/dev/null || php artisan key:generate --force 2>/dev/null
+    php artisan key:generate --force 2>&1 | tee -a "$LOG_FILE"
 
     # Only run migrations if database is empty or new
     if [[ ! -s "$INSTALL_DIR/database/database.sqlite" ]]; then
         log "Running database migrations..."
-        /usr/bin/php artisan migrate --force 2>/dev/null || php artisan migrate --force 2>/dev/null
+        php artisan migrate --force 2>&1 | tee -a "$LOG_FILE"
     else
         log "✅ Using existing database with data"
     fi
 
     # Install NPM dependencies
     log "Installing NPM dependencies (this may take several minutes)..."
-    retry_run "npm install --legacy-peer-deps" "NPM install" 3
+    retry_run "npm install --legacy-peer-deps --loglevel=error" "NPM install" 3
 
     # Build frontend assets
     log "Building frontend assets..."
-    npm run build 2>/dev/null
+    npm run build 2>&1 | tee -a "$LOG_FILE"
 
     # Set permissions
     log "Setting proper permissions..."
@@ -373,7 +463,7 @@ EOF
     chmod -R 775 "$INSTALL_DIR/bootstrap/cache"
 
     # Make IP update script executable
-    chmod +x "$INSTALL_DIR/check-and-update-ip.sh"
+    chmod +x "$INSTALL_DIR/check-and-update-ip.sh" 2>/dev/null || true
 
     log_success "✅ Phase 7 Complete: Application configured"
 }
@@ -382,9 +472,13 @@ EOF
 phase8_systemd_service() {
     log_info "⚙️ PHASE 8: Systemd Service Configuration"
 
+    # Get PHP binary path
+    PHP_BIN=$(which php)
+    NPM_BIN=$(which npm)
+
     # Create Laravel service
     log "Creating Laravel systemd service..."
-    cat > /etc/systemd/system/newsapp.service << 'EOF'
+    cat > /etc/systemd/system/newsapp.service << EOF
 [Unit]
 Description=NewsApp Laravel Application
 Documentation=https://laravel.com/docs
@@ -396,7 +490,7 @@ User=www-data
 Group=www-data
 WorkingDirectory=/opt/newsapp
 Environment=PATH=/usr/bin:/usr/local/bin
-ExecStart=/usr/bin/php artisan serve --host=0.0.0.0 --port=8000
+ExecStart=$PHP_BIN artisan serve --host=0.0.0.0 --port=8000
 Restart=always
 RestartSec=10
 StandardOutput=journal
@@ -409,7 +503,7 @@ EOF
 
     # Create Vite service for development mode
     log "Creating Vite systemd service..."
-    cat > /etc/systemd/system/newsapp-vite.service << 'EOF'
+    cat > /etc/systemd/system/newsapp-vite.service << EOF
 [Unit]
 Description=NewsApp Vite Development Server
 After=network.target
@@ -420,7 +514,7 @@ User=www-data
 Group=www-data
 WorkingDirectory=/opt/newsapp
 Environment=PATH=/usr/bin:/usr/local/bin:/usr/local/sbin
-ExecStart=/usr/bin/npm run dev
+ExecStart=$NPM_BIN run dev
 Restart=always
 RestartSec=10
 StandardOutput=journal
@@ -482,18 +576,20 @@ phase9_service_startup() {
     # Start Laravel service
     log "Starting NewsApp Laravel service..."
     systemctl start newsapp
-    sleep 3
+    sleep 5
 
     # Start Vite service
     log "Starting Vite development server..."
     systemctl start newsapp-vite
-    sleep 3
+    sleep 5
 
     # Check service status
     if systemctl is-active newsapp >/dev/null 2>&1; then
         log_success "✅ Laravel service: RUNNING"
     else
         log_warning "⚠️ Laravel service: FAILED TO START"
+        log_info "Checking logs..."
+        journalctl -u newsapp -n 20 --no-pager | tee -a "$LOG_FILE"
     fi
 
     if systemctl is-active newsapp-vite >/dev/null 2>&1; then
@@ -510,7 +606,9 @@ phase9_service_startup() {
 
     # Run IP update script immediately
     log "Running initial IP configuration..."
-    "$INSTALL_DIR/check-and-update-ip.sh"
+    if [ -f "$INSTALL_DIR/check-and-update-ip.sh" ]; then
+        "$INSTALL_DIR/check-and-update-ip.sh" 2>&1 | tee -a "$LOG_FILE"
+    fi
 
     # Test web interface
     log "Testing web interface..."
@@ -534,6 +632,7 @@ final_completion() {
 
     # Verify PHP path
     export PATH="/usr/bin:/usr/local/bin:$PATH"
+    PHP_BIN=$(which php)
 
     # Create completion file
     cat > "$INSTALL_DIR/INSTALLATION_COMPLETE.txt" << EOF
@@ -542,7 +641,7 @@ final_completion() {
 
 🕐 Installation completed: $(date)
 🖥️  System: $(uname -a)
-🐘 PHP version: $(/usr/bin/php --version 2>/dev/null | head -1 || echo "PHP 8.2 installed")
+🐘 PHP version: $($PHP_BIN --version 2>/dev/null | head -1 || echo "PHP installed")
 📍 Installation directory: $INSTALL_DIR
 📝 Complete log: $LOG_FILE
 
@@ -591,6 +690,9 @@ EOF
     echo
     echo -e "${CYAN}🚀 Your NewsApp system is now ready for production use!${NC}"
     echo
+    echo -e "${YELLOW}💡 Quick Test:${NC}"
+    echo -e "   ${CYAN}curl http://localhost:8000${NC}"
+    echo
 }
 
 # MAIN EXECUTION
@@ -599,6 +701,8 @@ main() {
     echo
 
     check_root
+    detect_os_and_php_version
+    echo
 
     phase0_complete_cleanup
     echo
@@ -606,7 +710,7 @@ main() {
     phase1_system_preparation
     echo
 
-    phase2_php_mysql_setup
+    phase2_php_installation
     echo
 
     phase3_composer_installation
