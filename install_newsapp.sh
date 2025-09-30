@@ -130,15 +130,15 @@ detect_os_and_requirements() {
 
     # Determine PHP version based on Ubuntu version (no upgrade needed!)
     case "$OS_CODENAME" in
-        xenial)  # Ubuntu 16.04 - Use PHP 8.0
+        xenial)  # Ubuntu 16.04 - Use PHP 7.4 (maximum available)
             NEEDS_UPGRADE=false
-            PHP_VERSION="8.0"
-            log "✅ Ubuntu 16.04 - Compatible with PHP 8.0 (Laravel 11)"
+            PHP_VERSION="7.4"
+            log "✅ Ubuntu 16.04 - Using PHP 7.4 (maximum available)"
             ;;
         bionic)  # Ubuntu 18.04 - Use PHP 8.0
             NEEDS_UPGRADE=false
             PHP_VERSION="8.0"
-            log "✅ Ubuntu 18.04 - Compatible with PHP 8.0 (Laravel 11)"
+            log "✅ Ubuntu 18.04 - Compatible with PHP 8.0"
             ;;
         focal)   # Ubuntu 20.04 - Use PHP 8.1
             NEEDS_UPGRADE=false
@@ -152,8 +152,8 @@ detect_os_and_requirements() {
             ;;
         *)
             NEEDS_UPGRADE=false
-            PHP_VERSION="8.0"
-            log_warning "Unknown Ubuntu version - Will attempt PHP 8.0 installation"
+            PHP_VERSION="7.4"
+            log_warning "Unknown Ubuntu version - Will attempt PHP 7.4 installation"
             ;;
     esac
 
@@ -428,13 +428,16 @@ phase2_php_installation() {
         PHP_INSTALLED_VERSION=$(php --version | head -1)
         log "✅ PHP installed: $PHP_INSTALLED_VERSION"
 
-        # Verify it's 8.0+
+        # Verify it's 7.4+
         PHP_MAJOR=$(php -r 'echo PHP_MAJOR_VERSION;')
+        PHP_MINOR=$(php -r 'echo PHP_MINOR_VERSION;')
 
-        if [ "$PHP_MAJOR" -ge 8 ]; then
-            log_success "✅ PHP 8.0+ confirmed - Laravel 11 compatible"
+        if [ "$PHP_MAJOR" -eq 7 ] && [ "$PHP_MINOR" -ge 4 ]; then
+            log_success "✅ PHP 7.4+ confirmed - Laravel 9+ compatible"
+        elif [ "$PHP_MAJOR" -ge 8 ]; then
+            log_success "✅ PHP 8.0+ confirmed - Laravel 9+ compatible"
         else
-            log_error "❌ PHP version too old for Laravel 11 (requires PHP 8.0+)"
+            log_error "❌ PHP version too old (requires PHP 7.4+)"
             exit 1
         fi
     else
