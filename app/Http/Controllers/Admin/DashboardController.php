@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\News;
 use App\Models\Setting;
 use App\Models\License; // Import the License model
+use App\Services\NetworkManager; // Import NetworkManager
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -236,5 +237,82 @@ class DashboardController extends Controller
         );
 
         return redirect()->route('admin.settings')->with('success', __('Footer settings updated successfully!'));
+    }
+
+    // Network Settings Methods
+    public function updateNetworkSettings(Request $request)
+    {
+        // Ensure only superadmins can call this method
+        if (!Auth::user()->isSuperAdmin()) {
+            abort(403, __('Unauthorized action.'));
+        }
+
+        Log::info('Attempting to update network settings.');
+        Log::info('Network Request data:', $request->all());
+
+        try {
+            $request->validate([
+                'network_ip_type' => 'required|in:dynamic,static',
+                'network_ip_address' => 'required_if:network_ip_type,static|nullable|ip',
+                'network_subnet_mask' => 'required_if:network_ip_type,static|nullable|ip',
+                'network_gateway' => 'required_if:network_ip_type,static|nullable|ip',
+                'network_dns_server' => 'nullable|ip',
+            ]);
+
+            // Save to database
+            Setting::updateOrCreate(['key' => 'network_ip_type'], ['value' => $request->input('network_ip_type')]);
+            Setting::updateOrCreate(['key' => 'network_ip_address'], ['value' => $request->input('network_ip_address')]);
+            Setting::updateOrCreate(['key' => 'network_subnet_mask'], ['value' => $request->input('network_subnet_mask')]);
+            Setting::updateOrCreate(['key' => 'network_gateway'], ['value' => $request->input('network_gateway')]);
+            Setting::updateOrCreate(['key' => 'network_dns_server'], ['value' => $request->input('network_dns_server', '8.8.8.8')]);
+
+            // Apply network configuration to the system
+            $networkManager = new NetworkManager();
+            $config = [
+                'ipType' => $request->input('network_ip_type'),
+                'ipAddress' => $request->input('network_ip_address'),
+                'subnetMask' => $request->input('network_subnet_mask'),
+                'gateway' => $request->input('network_gateway'),
+                'dnsServer' => $request->input('network_dns_server', '8.8.8.8'),
+            ];
+
+            $result = $networkManager->applyNetworkConfig($config);
+
+            if ($result['status'] === 'error') {
+                Log::error('Network configuration failed: ' . $result['message']);
+                return redirect()->back()->with('error', __('Failed to apply network settings: ') . $result['message']);
+            }
+
+            Log::info('Network settings updated successfully.');
+            return redirect()->route('admin.settings')->with('success', __('Network settings updated successfully! Changes will take effect shortly.'));
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::error('Validation error updating network settings: ' . $e->getMessage(), $e->errors());
+            return redirect()->back()->withErrors($e->errors())->withInput();
+        } catch (\Exception $e) {
+            Log::error('Error updating network settings: ' . $e->getMessage(), ['exception' => $e]);
+            return redirect()->back()->with('error', 'Failed to update network settings. Please try again.');
+        }
+    }
+
+    public function getCurrentNetworkStatus()
+    {
+        try {
+            $networkManager = new NetworkManager();
+            $currentConfig = $networkManager->getCurrentConfig();
+
+            return response()->json([
+                'status' => 'success',
+                'current_config' => $currentConfig,
+                'network_system' => $networkManager->getNetworkSystem(),
+                'timestamp' => now()->toIso8601String(),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error getting current network status: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to get network status',
+            ], 500);
+        }
     }
 }

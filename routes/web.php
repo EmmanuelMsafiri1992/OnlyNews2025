@@ -72,11 +72,14 @@ Route::prefix('admin')->middleware(['auth', SetAdminLocale::class])->group(funct
         Route::delete('/licenses/{license}', [LicenseController::class, 'destroy'])->name('admin.licenses.destroy');
             // New route for Slider settings - ADD THIS LINE
         Route::post('/settings/slider', [DashboardController::class, 'updateSliderSettings'])->name('admin.settings.slider');
-       // User Management
-       Route::resource('users', App\Http\Controllers\Admin\UserController::class, ['as' => 'admin'])->except(['show', 'update']);
-       Route::put('/users/{user}/password', [App\Http\Controllers\Admin\UserController::class, 'updatePassword'])->name('admin.users.updatePassword');
-      Route::get('/users/{user}/license/edit', [App\Http\Controllers\Admin\UserController::class, 'editLicense'])->name('admin.users.license.edit');
-       Route::put('/users/{user}/license', [App\Http\Controllers\Admin\UserController::class, 'updateLicense'])->name('admin.users.license.update');
+        // Network Settings
+        Route::post('/settings/network', [DashboardController::class, 'updateNetworkSettings'])->name('admin.settings.network');
+        Route::get('/network/status', [DashboardController::class, 'getCurrentNetworkStatus'])->name('admin.network.status');
+        // User Management
+        Route::resource('users', App\Http\Controllers\Admin\UserController::class, ['as' => 'admin'])->except(['show', 'update']);
+        Route::put('/users/{user}/password', [App\Http\Controllers\Admin\UserController::class, 'updatePassword'])->name('admin.users.updatePassword');
+        Route::get('/users/{user}/license/edit', [App\Http\Controllers\Admin\UserController::class, 'editLicense'])->name('admin.users.license.edit');
+        Route::put('/users/{user}/license', [App\Http\Controllers\Admin\UserController::class, 'updateLicense'])->name('admin.users.license.update');
 
     });
 });

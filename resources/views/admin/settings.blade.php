@@ -219,6 +219,86 @@
                                     </div>
                                 </div>
                             @endif
+
+                            {{-- Network Settings: Only visible to SuperAdmins --}}
+                            @if (Auth::user()->isSuperAdmin())
+                                <div class="col-md-6 mb-4">
+                                    <div class="card p-3">
+                                        <h5 class="mb-3">{{ __('Network Settings') }}</h5>
+                                        <form action="{{ route('admin.settings.network') }}" method="POST" id="networkSettingsForm">
+                                            @csrf
+                                            <div class="mb-3">
+                                                <label class="form-label">{{ __('IP Configuration') }}</label>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="radio" name="network_ip_type" id="dynamicIp" value="dynamic"
+                                                        {{ ($settings['network_ip_type'] ?? 'dynamic') == 'dynamic' ? 'checked' : '' }}
+                                                        onchange="toggleStaticFields()">
+                                                    <label class="form-check-label" for="dynamicIp">
+                                                        {{ __('Dynamic IP (DHCP)') }}
+                                                    </label>
+                                                </div>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="radio" name="network_ip_type" id="staticIp" value="static"
+                                                        {{ ($settings['network_ip_type'] ?? 'dynamic') == 'static' ? 'checked' : '' }}
+                                                        onchange="toggleStaticFields()">
+                                                    <label class="form-check-label" for="staticIp">
+                                                        {{ __('Static IP') }}
+                                                    </label>
+                                                </div>
+                                            </div>
+
+                                            <div id="staticIpFields" style="display: {{ ($settings['network_ip_type'] ?? 'dynamic') == 'static' ? 'block' : 'none' }};">
+                                                <div class="mb-3">
+                                                    <label for="network_ip_address" class="form-label">{{ __('IP Address') }}</label>
+                                                    <input type="text" class="form-control" id="network_ip_address" name="network_ip_address"
+                                                        value="{{ $settings['network_ip_address'] ?? '' }}"
+                                                        placeholder="192.168.1.100"
+                                                        pattern="^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$">
+                                                    @error('network_ip_address')
+                                                        <div class="text-danger mt-2">{{ $message }}</div>
+                                                    @enderror
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label for="network_subnet_mask" class="form-label">{{ __('Subnet Mask') }}</label>
+                                                    <input type="text" class="form-control" id="network_subnet_mask" name="network_subnet_mask"
+                                                        value="{{ $settings['network_subnet_mask'] ?? '255.255.255.0' }}"
+                                                        placeholder="255.255.255.0"
+                                                        pattern="^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$">
+                                                    @error('network_subnet_mask')
+                                                        <div class="text-danger mt-2">{{ $message }}</div>
+                                                    @enderror
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label for="network_gateway" class="form-label">{{ __('Gateway') }}</label>
+                                                    <input type="text" class="form-control" id="network_gateway" name="network_gateway"
+                                                        value="{{ $settings['network_gateway'] ?? '' }}"
+                                                        placeholder="192.168.1.1"
+                                                        pattern="^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$">
+                                                    @error('network_gateway')
+                                                        <div class="text-danger mt-2">{{ $message }}</div>
+                                                    @enderror
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label for="network_dns_server" class="form-label">{{ __('DNS Server') }}</label>
+                                                    <input type="text" class="form-control" id="network_dns_server" name="network_dns_server"
+                                                        value="{{ $settings['network_dns_server'] ?? '8.8.8.8' }}"
+                                                        placeholder="8.8.8.8"
+                                                        pattern="^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$">
+                                                    @error('network_dns_server')
+                                                        <div class="text-danger mt-2">{{ $message }}</div>
+                                                    @enderror
+                                                </div>
+                                            </div>
+
+                                            <div class="alert alert-warning" role="alert">
+                                                <strong>{{ __('Warning:') }}</strong> {{ __('Changing network settings may disconnect you temporarily. Make sure you have physical access to the device.') }}
+                                            </div>
+
+                                            <button type="submit" class="btn btn-primary">{{ __('Update Network Settings') }}</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            @endif
                         </div>
                     </div>
 
