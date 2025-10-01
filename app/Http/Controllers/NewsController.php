@@ -30,17 +30,27 @@ class NewsController extends Controller
 
         // Force simple mode with ?simple=1 or ?legacy=1 parameter
         if ($isOldBrowser || $request->get('legacy') === '1' || $request->get('simple') === '1') {
-            // Serve simple server-rendered page for old browsers/TVs
-            $news = News::with('category', 'images')->get();
-            $settings = \App\Models\Setting::pluck('value', 'key');
+            try {
+                // Serve simple server-rendered page for old browsers/TVs
+                $news = News::with('category', 'images')->get();
+                $settings = \App\Models\Setting::pluck('value', 'key')->toArray();
 
-            Log::info('Serving simple view', ['user_agent' => $userAgent, 'is_old_browser' => $isOldBrowser]);
+                Log::info('Serving simple view', [
+                    'user_agent' => $userAgent,
+                    'is_old_browser' => $isOldBrowser,
+                    'news_count' => $news->count(),
+                    'settings_count' => count($settings)
+                ]);
 
-            return response()
-                ->view('news.simple', compact('news', 'settings'))
-                ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
-                ->header('Pragma', 'no-cache')
-                ->header('Expires', '0');
+                return response()
+                    ->view('news.simple', compact('news', 'settings'))
+                    ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
+                    ->header('Pragma', 'no-cache')
+                    ->header('Expires', '0');
+            } catch (\Exception $e) {
+                Log::error('Error serving simple view', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+                return response('<h1>Error loading page</h1><p>' . $e->getMessage() . '</p>', 500);
+            }
         }
 
         // Regular Vue app for modern browsers
