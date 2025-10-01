@@ -26,14 +26,25 @@ echo "Fixing database permissions..."
 mkdir -p database
 chmod 775 database
 
+# Set database directory ownership
+if [ "$EUID" -eq 0 ]; then
+    chown www-data:www-data database
+fi
+
 # If database file exists, make it writable
 if [ -f database/database.sqlite ]; then
     chmod 664 database/database.sqlite
+    if [ "$EUID" -eq 0 ]; then
+        chown www-data:www-data database/database.sqlite
+    fi
     echo "database.sqlite permissions fixed"
 else
     echo "Creating database.sqlite..."
     touch database/database.sqlite
     chmod 664 database/database.sqlite
+    if [ "$EUID" -eq 0 ]; then
+        chown www-data:www-data database/database.sqlite
+    fi
 fi
 
 # Clear and recreate cache
