@@ -1,40 +1,34 @@
 <?php
 
 return [
-    /*
-     * You can enable or disable CORS by setting this value to true or false.
-     */
-    'enabled' => env('CORS_ENABLED', true), // Ensure this is true
 
     /*
-     * These are the paths to which CORS will be applied.
-     * The default 'api/*' is crucial for your case.
-     */
+    |--------------------------------------------------------------------------
+    | Cross-Origin Resource Sharing (CORS) Configuration
+    |--------------------------------------------------------------------------
+    |
+    | Here you may configure your settings for cross-origin resource sharing
+    | or "CORS". This determines what cross-origin operations may execute
+    | in web browsers. You are free to adjust these settings as needed.
+    |
+    | To learn more: https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS
+    |
+    */
+
     'paths' => ['api/*', 'sanctum/csrf-cookie'],
 
-    /*
-     * The list of origins that can make CORS requests.
-     * You will need to add your Vue.js frontend's URL here.
-     */
+    'allowed_methods' => ['*'],
+
     'allowed_origins' => ['*'],
 
-    /*
-     * The list of headers that are allowed to be sent with CORS requests.
-     */
-    'allowed_headers' => ['*'], // For development, '*' is often used initially
+    'allowed_origins_patterns' => [],
 
-    /*
-     * The list of methods that are allowed.
-     */
-    'allowed_methods' => ['*'], // For development, '*' is often used initially
+    'allowed_headers' => ['*'],
 
-    /*
-     * The maximum age of the CORS preflight request (in seconds).
-     */
+    'exposed_headers' => [],
+
     'max_age' => 0,
 
-    /*
-     * If true, the response will include a `Vary: Origin` header.
-     */
     'supports_credentials' => false,
+
 ];
