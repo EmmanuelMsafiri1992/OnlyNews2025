@@ -43,7 +43,7 @@ class NewsController extends Controller
                 ]);
 
                 return response()
-                    ->view('news.simple', compact('news', 'settings'))
+                    ->view('news.tv', compact('news', 'settings'))
                     ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
                     ->header('Pragma', 'no-cache')
                     ->header('Expires', '0');
