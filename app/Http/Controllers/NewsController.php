@@ -11,18 +11,30 @@ class NewsController extends Controller
     public function index(Request $request)
     {
         // Check if request is from old TV browser (no ES6 support)
-        $userAgent = $request->header('User-Agent', '');
+        $userAgent = strtolower($request->header('User-Agent', ''));
+
+        // Detect various TV/embedded browsers
         $isOldBrowser = (
-            stripos($userAgent, 'Tizen') !== false ||
-            stripos($userAgent, 'WebOS') !== false ||
-            stripos($userAgent, 'NetCast') !== false ||
-            stripos($userAgent, 'SmartTV') !== false
+            stripos($userAgent, 'tizen') !== false ||
+            stripos($userAgent, 'webos') !== false ||
+            stripos($userAgent, 'netcast') !== false ||
+            stripos($userAgent, 'smarttv') !== false ||
+            stripos($userAgent, 'samsung') !== false ||
+            stripos($userAgent, 'lg') !== false ||
+            stripos($userAgent, 'philips') !== false ||
+            stripos($userAgent, 'hbbtv') !== false ||
+            stripos($userAgent, 'maple') !== false ||
+            // Detect very old browsers
+            (stripos($userAgent, 'msie') !== false && stripos($userAgent, 'msie 9') === false && stripos($userAgent, 'msie 10') === false && stripos($userAgent, 'msie 11') === false)
         );
 
-        if ($isOldBrowser || $request->get('legacy') === '1') {
+        // Force simple mode with ?simple=1 or ?legacy=1 parameter
+        if ($isOldBrowser || $request->get('legacy') === '1' || $request->get('simple') === '1') {
             // Serve simple server-rendered page for old browsers/TVs
             $news = News::with('category', 'images')->get();
             $settings = \App\Models\Setting::pluck('value', 'key');
+
+            Log::info('Serving simple view', ['user_agent' => $userAgent, 'is_old_browser' => $isOldBrowser]);
 
             return response()
                 ->view('news.simple', compact('news', 'settings'))

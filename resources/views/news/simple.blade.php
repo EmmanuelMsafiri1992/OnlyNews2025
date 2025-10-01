@@ -1,135 +1,96 @@
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <title>{{ $settings['app_name'] ?? 'News' }}</title>
-    <style>
-        * {
+    <style type="text/css">
+        body {
             margin: 0;
             padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
             font-family: Arial, sans-serif;
-            background: #f5f5f5;
-            overflow: hidden;
+            background-color: #000000;
+            color: #ffffff;
         }
 
         .header {
-            background: #2c3e50;
-            color: white;
-            padding: 20px;
+            background-color: #1a1a1a;
+            padding: 30px;
             text-align: center;
+            border-bottom: 3px solid #444;
         }
 
         .header h1 {
-            font-size: 2.5rem;
-            margin-bottom: 10px;
+            font-size: 48px;
+            margin: 0 0 10px 0;
+            color: #ffffff;
         }
 
-        .container {
-            display: flex;
-            height: calc(100vh - 140px);
-            padding: 20px;
-            gap: 20px;
-        }
-
-        .slider {
-            flex: 1;
-            background: white;
-            border-radius: 10px;
-            overflow: hidden;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        .header p {
+            font-size: 24px;
+            margin: 0;
+            color: #cccccc;
         }
 
         .slide {
             display: none;
-            width: 100%;
-            height: 100%;
+            text-align: center;
+            padding: 20px;
         }
 
         .slide.active {
-            display: flex;
-            flex-direction: column;
+            display: block;
         }
 
         .slide-image {
-            width: 100%;
-            height: 70%;
-            object-fit: contain;
-            background: #000;
+            width: 90%;
+            max-width: 1400px;
+            height: auto;
+            margin: 20px auto;
+            display: block;
+            background-color: #000;
         }
 
         .slide-content {
-            padding: 20px;
-            height: 30%;
-            overflow: auto;
+            max-width: 1400px;
+            margin: 20px auto;
+            padding: 30px;
+            background-color: #1a1a1a;
+            border: 2px solid #444;
         }
 
         .slide-title {
-            font-size: 1.8rem;
-            margin-bottom: 10px;
-            color: #2c3e50;
+            font-size: 42px;
+            margin: 0 0 20px 0;
+            color: #ffffff;
+            font-weight: bold;
         }
 
         .slide-description {
-            font-size: 1.2rem;
-            color: #666;
+            font-size: 28px;
+            color: #cccccc;
             line-height: 1.6;
-        }
-
-        .news-list {
-            flex: 0 0 400px;
-            background: white;
-            border-radius: 10px;
-            overflow-y: auto;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-
-        .news-item {
-            padding: 15px;
-            border-bottom: 1px solid #eee;
-            cursor: pointer;
-            transition: background 0.3s;
-        }
-
-        .news-item:hover,
-        .news-item.active {
-            background: #e3f2fd;
-        }
-
-        .news-item-title {
-            font-size: 1.1rem;
-            font-weight: bold;
-            margin-bottom: 5px;
-            color: #2c3e50;
-        }
-
-        .news-item-date {
-            font-size: 0.9rem;
-            color: #999;
+            text-align: left;
         }
 
         .footer {
-            background: #2c3e50;
-            color: white;
-            padding: 10px 20px;
+            background-color: #1a1a1a;
+            padding: 20px;
             text-align: center;
-            font-size: 0.9rem;
+            font-size: 20px;
+            border-top: 3px solid #444;
+            position: fixed;
+            bottom: 0;
+            width: 100%;
         }
 
         .no-news {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 100%;
-            font-size: 2rem;
-            color: #999;
+            text-align: center;
+            padding: 100px 20px;
+            font-size: 48px;
+            color: #666;
         }
     </style>
 </head>
@@ -140,91 +101,71 @@
     </div>
 
     @if($news->count() > 0)
-        <div class="container">
-            <!-- Slider -->
-            <div class="slider" id="slider">
-                @php
-                    $slideIndex = 0;
-                @endphp
-                @foreach($news as $newsItem)
-                    @if($newsItem->images->count() > 0)
-                        @foreach($newsItem->images as $image)
-                            <div class="slide {{ $slideIndex === 0 ? 'active' : '' }}" data-duration="{{ $image->slide_duration ?? 5000 }}">
-                                <img src="{{ asset('storage/' . $image->url) }}" alt="{{ $newsItem->title }}" class="slide-image">
-                                <div class="slide-content">
-                                    <h2 class="slide-title">{{ $newsItem->title }}</h2>
-                                    <div class="slide-description">{!! strip_tags($newsItem->description) !!}</div>
-                                </div>
-                            </div>
-                            @php $slideIndex++; @endphp
-                        @endforeach
-                    @else
-                        <div class="slide {{ $slideIndex === 0 ? 'active' : '' }}" data-duration="5000">
-                            <div style="width: 100%; height: 70%; background: #ddd; display: flex; align-items: center; justify-content: center; color: #999; font-size: 2rem;">
-                                No Image
-                            </div>
+        <div id="slider">
+            @php
+                $slideIndex = 0;
+            @endphp
+            @foreach($news as $newsItem)
+                @if($newsItem->images->count() > 0)
+                    @foreach($newsItem->images as $image)
+                        <div class="slide {{ $slideIndex === 0 ? 'active' : '' }}" id="slide{{ $slideIndex }}" data-duration="{{ $image->slide_duration ?? 5000 }}">
+                            <img src="{{ asset('storage/' . $image->url) }}" alt="{{ $newsItem->title }}" class="slide-image">
                             <div class="slide-content">
                                 <h2 class="slide-title">{{ $newsItem->title }}</h2>
-                                <div class="slide-description">{!! strip_tags($newsItem->description) !!}</div>
+                                <div class="slide-description">{!! nl2br(strip_tags($newsItem->description)) !!}</div>
                             </div>
                         </div>
                         @php $slideIndex++; @endphp
-                    @endif
-                @endforeach
-            </div>
-
-            <!-- News List -->
-            <div class="news-list">
-                @php $itemIndex = 0; @endphp
-                @foreach($news as $newsItem)
-                    <div class="news-item {{ $itemIndex === 0 ? 'active' : '' }}" onclick="goToSlide({{ $itemIndex }})">
-                        <div class="news-item-title">{{ $newsItem->title }}</div>
-                        <div class="news-item-date">{{ $newsItem->created_at->format('M d, Y') }}</div>
+                    @endforeach
+                @else
+                    <div class="slide {{ $slideIndex === 0 ? 'active' : '' }}" id="slide{{ $slideIndex }}" data-duration="5000">
+                        <div class="slide-content">
+                            <h2 class="slide-title">{{ $newsItem->title }}</h2>
+                            <div class="slide-description">{!! nl2br(strip_tags($newsItem->description)) !!}</div>
+                        </div>
                     </div>
-                    @php $itemIndex++; @endphp
-                @endforeach
-            </div>
+                    @php $slideIndex++; @endphp
+                @endif
+            @endforeach
         </div>
     @else
-        <div class="container">
-            <div class="no-news">No news available</div>
-        </div>
+        <div class="no-news">No news available</div>
     @endif
 
     <div class="footer">
         {{ $settings['footer_copyright_text'] ?? '© 2025' }} | {{ $settings['footer_contact_info'] ?? 'Contact Us' }}
     </div>
 
-    <script>
+    <script type="text/javascript">
         var currentSlide = 0;
-        var slides = document.querySelectorAll('.slide');
-        var newsItems = document.querySelectorAll('.news-item');
-        var autoSlideTimeout;
+        var slides = document.getElementsByClassName('slide');
+        var autoSlideTimeout = null;
+
+        function removeClass(element, className) {
+            if (element.className) {
+                element.className = element.className.replace(new RegExp('\\b' + className + '\\b', 'g'), '').replace(/\s+/g, ' ').replace(/^\s+|\s+$/g, '');
+            }
+        }
+
+        function addClass(element, className) {
+            if (element.className.indexOf(className) === -1) {
+                element.className = element.className + ' ' + className;
+            }
+        }
 
         function showSlide(index) {
             if (slides.length === 0) return;
 
-            // Wrap around
             if (index >= slides.length) index = 0;
             if (index < 0) index = slides.length - 1;
 
             currentSlide = index;
 
-            // Update slides
             for (var i = 0; i < slides.length; i++) {
-                slides[i].classList.remove('active');
+                removeClass(slides[i], 'active');
             }
-            slides[currentSlide].classList.add('active');
+            addClass(slides[currentSlide], 'active');
 
-            // Update news list
-            for (var i = 0; i < newsItems.length; i++) {
-                newsItems[i].classList.remove('active');
-            }
-            if (newsItems[currentSlide]) {
-                newsItems[currentSlide].classList.add('active');
-            }
-
-            // Auto advance
             startAutoSlide();
         }
 
@@ -233,25 +174,21 @@
                 clearTimeout(autoSlideTimeout);
             }
 
-            var duration = parseInt(slides[currentSlide].getAttribute('data-duration')) || 5000;
+            var durationAttr = slides[currentSlide].getAttribute('data-duration');
+            var duration = durationAttr ? parseInt(durationAttr, 10) : 5000;
+
             autoSlideTimeout = setTimeout(function() {
                 showSlide(currentSlide + 1);
             }, duration);
         }
 
-        function goToSlide(index) {
-            showSlide(index);
-        }
-
-        // Start auto slide
         if (slides.length > 0) {
             startAutoSlide();
         }
 
-        // Refresh page every 5 minutes to get new content
         setTimeout(function() {
             window.location.reload();
-        }, 5 * 60 * 1000);
+        }, 300000);
     </script>
 </body>
 </html>
