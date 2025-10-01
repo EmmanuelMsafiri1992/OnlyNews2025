@@ -49,8 +49,23 @@
             {{-- App.vue will render its entire content here --}}
         </div>
 
-        {{-- Use Vite directive - it handles dev vs production automatically --}}
-        @vite(['resources/css/app.css', 'resources/js/app.js'])
+        {{-- Load Vite assets manually for Laravel 8 compatibility --}}
+        @if (file_exists(public_path('build/manifest.json')))
+            @php
+                $manifest = json_decode(file_get_contents(public_path('build/manifest.json')), true);
+            @endphp
+            @if (isset($manifest['resources/css/app.css']))
+                <link rel="stylesheet" href="{{ asset('build/' . $manifest['resources/css/app.css']['file']) }}">
+            @endif
+            @if (isset($manifest['resources/js/app.js']))
+                @if (isset($manifest['resources/js/app.js']['css']))
+                    @foreach ($manifest['resources/js/app.js']['css'] as $css)
+                        <link rel="stylesheet" href="{{ asset('build/' . $css) }}">
+                    @endforeach
+                @endif
+                <script type="module" src="{{ asset('build/' . $manifest['resources/js/app.js']['file']) }}"></script>
+            @endif
+        @endif
     @else
         {{-- For authentication pages, and other dedicated Blade-only pages (like admin panel list/forms),
              only render the content specified in their respective Blade files.
@@ -60,7 +75,14 @@
         </div>
 
         {{-- Load only CSS for Blade-only pages --}}
-        @vite('resources/css/app.css')
+        @if (file_exists(public_path('build/manifest.json')))
+            @php
+                $manifest = json_decode(file_get_contents(public_path('build/manifest.json')), true);
+            @endphp
+            @if (isset($manifest['resources/css/app.css']))
+                <link rel="stylesheet" href="{{ asset('build/' . $manifest['resources/css/app.css']['file']) }}">
+            @endif
+        @endif
     @endif
 
 </body>
