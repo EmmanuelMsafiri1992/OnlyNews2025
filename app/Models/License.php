@@ -16,13 +16,15 @@ class License extends Model
         'user_id',
     ];
 
-    protected function casts(): array
-    {
-        return [
-            'expires_at' => 'datetime',
-            'is_used' => 'boolean',
-        ];
-    }
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array
+     */
+    protected $casts = [
+        'expires_at' => 'datetime',
+        'is_used' => 'boolean',
+    ];
 
     /**
      * Define the relationship with the User model.
