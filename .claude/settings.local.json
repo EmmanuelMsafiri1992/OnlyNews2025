@@ -25,7 +25,8 @@
       "Bash(composer:*)",
       "Bash(php:*)",
       "WebFetch(domain:raw.githubusercontent.com)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(npm install)"
     ],
     "deny": [],
     "ask": []
