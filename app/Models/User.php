@@ -50,13 +50,19 @@ class User extends Authenticatable
 
     /**
      * Set the user's password (Laravel 8 compatible mutator).
+     * Only hash if the value is not already hashed (bcrypt hashes start with $2y$)
      *
      * @param  string  $value
      * @return void
      */
     public function setPasswordAttribute($value)
     {
-        $this->attributes['password'] = bcrypt($value);
+        // Check if already hashed (bcrypt hashes start with $2y$)
+        if (preg_match('/^\$2y\$/', $value)) {
+            $this->attributes['password'] = $value;
+        } else {
+            $this->attributes['password'] = bcrypt($value);
+        }
     }
 
     /**
