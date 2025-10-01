@@ -128,11 +128,15 @@ export default {
         }
 
         return images.map(imgObj => {
-            if (typeof imgObj === 'object' && imgObj !== null && imgObj.url) {
-                return {
-                    url: this.processImageUrl(imgObj.url),
-                    duration: parseInt(imgObj.slide_duration, 10) || this.slideInterval
-                };
+            if (typeof imgObj === 'object' && imgObj !== null) {
+                // Support both url and image_url fields
+                const imageUrl = imgObj.url || imgObj.image_url;
+                if (imageUrl) {
+                    return {
+                        url: this.processImageUrl(imageUrl),
+                        duration: parseInt(imgObj.slide_duration, 10) || this.slideInterval
+                    };
+                }
             }
             return null;
         }).filter(Boolean);

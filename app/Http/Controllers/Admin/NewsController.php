@@ -168,7 +168,7 @@ public function destroy(News $news)
     }
 }
 
-    public function deleteImage(News $news, Image $image)
+    public function destroyImage(News $news, Image $image)
     {
         try {
             // Ensure the image belongs to the news article
