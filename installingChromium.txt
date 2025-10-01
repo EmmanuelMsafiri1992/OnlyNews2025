@@ -1,0 +1,57 @@
+● Perfect! Now let's set it up on the NanoPi:
+
+  Step-by-Step Instructions:
+
+  1. Pull the script on NanoPi:
+
+  cd /opt/newsapp
+  git pull
+
+  2. Run the setup script:
+
+  cd /opt/newsapp
+  sudo bash setup-tv-kiosk.sh
+
+  This will:
+  - Install X server and Chromium browser (~5-10 minutes)
+  - Create auto-start scripts
+  - Configure kiosk mode
+  - Set up systemd service
+
+  3. Start the kiosk mode:
+
+  Option A - Start immediately:
+  sudo systemctl start tv-kiosk
+
+  Option B - Reboot (recommended):
+  sudo reboot
+
+  After reboot, the TV will automatically show your news app in fullscreen!
+
+  ---
+  What This Does:
+
+  ✓ NanoPi displays directly to TV via HDMI
+  ✓ Modern Chromium browser - runs full Vue.js app
+  ✓ Fullscreen kiosk mode - no browser UI visible
+  ✓ Auto-starts on boot - plug & play
+  ✓ Hides mouse cursor - clean display
+  ✓ Disables screen blanking - always on
+  ✓ Shows EXACT same app as computer - all features work!
+
+  ---
+  Troubleshooting:
+
+  If the screen stays black after reboot:
+
+  Check service status:
+  sudo systemctl status tv-kiosk
+
+  View logs:
+  journalctl -u tv-kiosk -f
+
+  Manual test:
+  DISPLAY=:0 startx
+
+  ---
+  Go ahead and run the setup! Let me know when you're ready to start or if you encounter any issues.
