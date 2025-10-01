@@ -186,6 +186,7 @@ public function apiIndex()
                         'date' => $item->created_at ? $item->created_at->format('M d, Y') : null,
                         'status' => $item->status ?? 'draft',
                         'category' => $item->category ? $item->category->name : 'Uncategorized',
+                        'slide_duration' => $image->slide_duration ?? 5000, // Include slide duration
                     ];
                 }
             } else {
@@ -200,6 +201,7 @@ public function apiIndex()
                     'date' => $item->created_at ? $item->created_at->format('M d, Y') : null,
                     'status' => $item->status ?? 'draft',
                     'category' => $item->category ? $item->category->name : 'Uncategorized',
+                    'slide_duration' => 5000, // Default duration for items without images
                 ];
             }
         }
