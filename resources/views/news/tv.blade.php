@@ -40,8 +40,8 @@ body { font-family:Arial,sans-serif; background:#000; color:#fff; overflow:hidde
 <div class="slide @if($num == 0) active @endif" data-id="{{ $item->id }}" data-time="{{ $img->slide_duration ?? 5000 }}">
 <img src="{{ asset('storage/' . $img->url) }}" alt="">
 <div class="info">
-<h2>@if(isset($item->title)){{ $item->title }}@endif</h2>
-<p>@if(isset($item->description)){{ strip_tags(html_entity_decode($item->description)) }}@endif</p>
+<h2>@if(isset($item->title)){{ strip_tags($item->title) }}@endif</h2>
+<p>@if(isset($item->description)){{ strip_tags($item->description) }}@endif</p>
 </div>
 </div>
 @php $num++; @endphp
@@ -49,8 +49,8 @@ body { font-family:Arial,sans-serif; background:#000; color:#fff; overflow:hidde
 @else
 <div class="slide @if($num == 0) active @endif" data-id="{{ $item->id }}" data-time="5000">
 <div class="info" style="position:relative; top:30%; transform:translateY(-50%);">
-<h2>@if(isset($item->title)){{ $item->title }}@endif</h2>
-<p>@if(isset($item->description)){{ strip_tags(html_entity_decode($item->description)) }}@endif</p>
+<h2>@if(isset($item->title)){{ strip_tags($item->title) }}@endif</h2>
+<p>@if(isset($item->description)){{ strip_tags($item->description) }}@endif</p>
 </div>
 </div>
 @php $num++; @endphp
@@ -66,7 +66,7 @@ body { font-family:Arial,sans-serif; background:#000; color:#fff; overflow:hidde
 @php $i = 0; @endphp
 @foreach($news as $item)
 <div class="item @if($i == 0) active @endif" data-id="{{ $item->id }}">
-<h3>@if(isset($item->title)){{ $item->title }}@endif</h3>
+<h3>@if(isset($item->title)){{ strip_tags($item->title) }}@endif</h3>
 <div class="date">@if(isset($item->created_at)){{ $item->created_at->format('M d, Y') }}@endif</div>
 </div>
 @php $i++; @endphp
