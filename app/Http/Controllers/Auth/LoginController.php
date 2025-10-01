@@ -7,6 +7,7 @@ use Illuminate\Foundation\Auth\AuthenticatesUsers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth; // Import Auth facade
 use App\Models\User; // Import User model
+use Illuminate\Support\Facades\Log; // Import Log facade
 
 class LoginController extends Controller
 {
@@ -49,13 +50,27 @@ class LoginController extends Controller
      */
     protected function authenticated(Request $request, $user)
     {
+        Log::info('User attempting login', ['user_id' => $user->id, 'email' => $user->email, 'role' => $user->role]);
+
         // If the authenticated user is a superadmin, they bypass all license checks.
         if ($user->isSuperAdmin()) {
+            Log::info('Superadmin login successful', ['user_id' => $user->id]);
             return redirect($this->redirectTo);
         }
 
+        // Eager load license to check status
+        $user->load('license');
+        Log::info('Checking license for user', [
+            'user_id' => $user->id,
+            'has_license' => $user->license ? 'yes' : 'no',
+            'is_used' => $user->license ? $user->license->is_used : 'N/A',
+            'expires_at' => $user->license && $user->license->expires_at ? $user->license->expires_at->toDateTimeString() : 'N/A',
+            'is_future' => $user->license && $user->license->expires_at ? $user->license->expires_at->isFuture() : 'N/A',
+        ]);
+
         // For all other authenticated users (non-superadmins), check their license status.
         if (!$user->hasActiveLicense()) {
+            Log::warning('User login denied - no active license', ['user_id' => $user->id]);
             // Log out the user to prevent session issues
             Auth::logout();
             $request->session()->invalidate();
@@ -65,6 +80,7 @@ class LoginController extends Controller
             return redirect()->route('login');
         }
 
+        Log::info('User login successful with active license', ['user_id' => $user->id]);
         // If the user is a non-superadmin with an active license, or a superadmin,
         // proceed to the intended dashboard.
         return redirect($this->redirectTo);

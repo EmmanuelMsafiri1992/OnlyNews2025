@@ -31,7 +31,8 @@
       "Bash(do curl -s \"https://raw.githubusercontent.com/laravel/laravel/8.x/config/$file.php\" -o \"$file.php\")",
       "Bash(done)",
       "Bash(rm:*)",
-      "Bash(git check-ignore:*)"
+      "Bash(git check-ignore:*)",
+      "Bash(ssh:*)"
     ],
     "deny": [],
     "ask": []
