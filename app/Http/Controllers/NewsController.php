@@ -32,8 +32,7 @@ class NewsController extends Controller
         }
 
         // Regular Vue app for modern browsers
-        $news = News::with('category', 'images')->get();
-        return view('news.index', compact('news'));
+        return view('layouts.app');
     }
 
     // public function apiIndex()
