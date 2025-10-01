@@ -26,9 +26,17 @@ class CheckLicense
             $user = Auth::user();
 
             // If the user is a superadmin, bypass all license checks and proceed.
-            if ($user->isSuperAdmin()) {
+            if ($user && $user->isSuperAdmin()) {
+                \Log::info('Superadmin detected in CheckLicense, bypassing license check', ['user_id' => $user->id, 'email' => $user->email]);
                 return $next($request);
             }
+
+            \Log::info('CheckLicense middleware running', [
+                'user_id' => $user ? $user->id : 'null',
+                'user_email' => $user ? $user->email : 'null',
+                'user_role' => $user ? $user->role : 'null',
+                'is_superadmin' => $user ? $user->isSuperAdmin() : false
+            ]);
 
             // For all other authenticated users (non-superadmins) accessing admin routes,
             // perform the global application license check first.
