@@ -1,6 +1,7 @@
 #!/bin/bash
-# NewsApp One-Command Installer - BULLETPROOF Ubuntu 16.04 → 20.04 + PHP 8.2
+# NewsApp One-Command Installer - BULLETPROOF Ubuntu 16.04 → 22.04 + PHP 8.2
 # Complete setup from fresh NanoPi to working Laravel + Vue system
+# ARM architecture support with automatic Ubuntu 22.04 upgrade for PHP 8.2
 # Uses MANUAL repository upgrade when do-release-upgrade fails
 # Usage: wget -qO- https://raw.githubusercontent.com/EmmanuelMsafiri1992/OnlyNews2025/main/install_newsapp.sh | sudo bash
 
@@ -24,8 +25,8 @@ echo -e "${PURPLE}╔═══════════════════�
 echo -e "${PURPLE}║          🚀 NEWSAPP BULLETPROOF INSTALLER 🚀                ║${NC}"
 echo -e "${PURPLE}║                                                              ║${NC}"
 echo -e "${PURPLE}║  Fresh NanoPi → Fully Working Laravel 12 + Vue System      ║${NC}"
-echo -e "${PURPLE}║  Auto-upgrades Ubuntu 16.04 → 20.04 + PHP 8.2             ║${NC}"
-echo -e "${PURPLE}║  GUARANTEED TO WORK - Manual upgrade method                 ║${NC}"
+echo -e "${PURPLE}║  ARM Support: Auto-upgrades Ubuntu 16.04 → 22.04           ║${NC}"
+echo -e "${PURPLE}║  Installs PHP 8.2 for Laravel 12 compatibility             ║${NC}"
 echo -e "${PURPLE}║                                                              ║${NC}"
 echo -e "${PURPLE}╚══════════════════════════════════════════════════════════════╝${NC}"
 echo
@@ -147,16 +148,38 @@ detect_os() {
 manual_ubuntu_upgrade() {
     log_info "🔄 Starting MANUAL Ubuntu upgrade process..."
 
-    # Determine target based on current version
-    if [ "$OS_VERSION" = "16.04" ]; then
-        TARGET_CODENAME="bionic"
-        TARGET_VERSION="18.04"
-    elif [ "$OS_VERSION" = "18.04" ]; then
-        TARGET_CODENAME="focal"
-        TARGET_VERSION="20.04"
+    # Determine target based on current version and marker
+    if [ -f "$UPGRADE_MARKER" ]; then
+        . "$UPGRADE_MARKER"
+        if [ -n "$TARGET_VERSION" ]; then
+            # Use target from marker (for 20.04 → 22.04 upgrades)
+            case "$TARGET_VERSION" in
+                22.04)
+                    TARGET_CODENAME="jammy"
+                    ;;
+                20.04)
+                    TARGET_CODENAME="focal"
+                    ;;
+                18.04)
+                    TARGET_CODENAME="bionic"
+                    ;;
+            esac
+        fi
     else
-        log "Already on Ubuntu $OS_VERSION"
-        return 0
+        # Auto-determine target based on current version
+        if [ "$OS_VERSION" = "16.04" ]; then
+            TARGET_CODENAME="bionic"
+            TARGET_VERSION="18.04"
+        elif [ "$OS_VERSION" = "18.04" ]; then
+            TARGET_CODENAME="focal"
+            TARGET_VERSION="20.04"
+        elif [ "$OS_VERSION" = "20.04" ]; then
+            TARGET_CODENAME="jammy"
+            TARGET_VERSION="22.04"
+        else
+            log "Already on Ubuntu $OS_VERSION"
+            return 0
+        fi
     fi
 
     echo
@@ -350,16 +373,94 @@ phase1_preparation() {
 phase2_php() {
     log_info "🐘 PHASE 2: PHP 8.2 Installation"
 
-    safe_run "add-apt-repository -y ppa:ondrej/php" "Adding PHP PPA"
-    retry_run "apt-get update" "Updating after PPA" 3
+    # Check if ARM architecture
+    ARCH=$(uname -m)
+    if [[ "$ARCH" == "armv7l" || "$ARCH" == "aarch64" ]]; then
+        log_warning "⚠️ ARM architecture detected ($ARCH)"
 
-    PHP_PACKAGES=("php8.2" "php8.2-cli" "php8.2-sqlite3" "php8.2-xml" "php8.2-mbstring" "php8.2-curl" "php8.2-zip" "php8.2-gd" "php8.2-bcmath" "php8.2-intl" "php8.2-tokenizer")
+        # Check Ubuntu version - need 22.04+ for better PHP support on ARM
+        if [ "$OS_VERSION" = "20.04" ]; then
+            log_error "❌ Ubuntu 20.04 on ARM doesn't support PHP 8.2"
+            log_error "❌ Laravel 12 requires PHP 8.2 minimum"
+            echo
+            echo -e "${YELLOW}╔═══════════════════════════════════════════════════════════════╗${NC}"
+            echo -e "${YELLOW}║                    SOLUTION REQUIRED                          ║${NC}"
+            echo -e "${YELLOW}║                                                               ║${NC}"
+            echo -e "${YELLOW}║  Your NanoPi (ARM) needs Ubuntu 22.04 for PHP 8.2            ║${NC}"
+            echo -e "${YELLOW}║                                                               ║${NC}"
+            echo -e "${YELLOW}║  Option 1: Upgrade to Ubuntu 22.04 (RECOMMENDED)             ║${NC}"
+            echo -e "${YELLOW}║  Option 2: Downgrade Laravel to version 9 (PHP 7.4)          ║${NC}"
+            echo -e "${YELLOW}║                                                               ║${NC}"
+            echo -e "${YELLOW}╚═══════════════════════════════════════════════════════════════╝${NC}"
+            echo
+            echo -e "${CYAN}Would you like to upgrade to Ubuntu 22.04? (y/n)${NC}"
 
-    for package in "${PHP_PACKAGES[@]}"; do
-        safe_run "DEBIAN_FRONTEND=noninteractive apt-get install -y $package" "Installing $package"
-    done
+            # Check if running in non-interactive mode
+            if [ ! -t 0 ]; then
+                log_info "Non-interactive mode detected, auto-upgrading to 22.04 in 10 seconds..."
+                sleep 10
+                UPGRADE_CHOICE="y"
+            else
+                read -p "Your choice: " UPGRADE_CHOICE
+            fi
 
-    update-alternatives --set php /usr/bin/php8.2 2>/dev/null || ln -sf /usr/bin/php8.2 /usr/bin/php
+            if [[ "$UPGRADE_CHOICE" =~ ^[Yy]$ ]]; then
+                log_info "Initiating upgrade to Ubuntu 22.04..."
+                echo "STAGE=initial" > "$UPGRADE_MARKER"
+                echo "TARGET_VERSION=22.04" >> "$UPGRADE_MARKER"
+                manual_ubuntu_upgrade
+                exit 0
+            else
+                log_error "Installation cancelled. Ubuntu 22.04 required for PHP 8.2 on ARM."
+                exit 1
+            fi
+        fi
+
+        # Ubuntu 22.04+ on ARM - Try ondrej/php PPA first, fallback to default
+        log_info "Attempting PHP 8.2 installation on Ubuntu $OS_VERSION ARM..."
+
+        safe_run "add-apt-repository -y ppa:ondrej/php" "Adding PHP PPA"
+        retry_run "apt-get update" "Updating after PPA" 3
+
+        # Try PHP 8.2 first
+        log_info "Trying PHP 8.2..."
+        if DEBIAN_FRONTEND=noninteractive apt-get install -y php8.2 php8.2-cli >> "$LOG_FILE" 2>&1; then
+            PHP_PACKAGES=("php8.2-sqlite3" "php8.2-xml" "php8.2-mbstring" "php8.2-curl" "php8.2-zip" "php8.2-gd" "php8.2-bcmath" "php8.2-intl" "php8.2-tokenizer")
+            log "✅ PHP 8.2 base installed"
+        else
+            # Fallback to PHP 8.1
+            log_warning "PHP 8.2 not available, trying PHP 8.1..."
+            if DEBIAN_FRONTEND=noninteractive apt-get install -y php8.1 php8.1-cli >> "$LOG_FILE" 2>&1; then
+                PHP_PACKAGES=("php8.1-sqlite3" "php8.1-xml" "php8.1-mbstring" "php8.1-curl" "php8.1-zip" "php8.1-gd" "php8.1-bcmath" "php8.1-intl" "php8.1-tokenizer")
+                log "✅ PHP 8.1 base installed"
+            else
+                log_error "❌ Failed to install PHP 8.x on ARM"
+                exit 1
+            fi
+        fi
+
+        for package in "${PHP_PACKAGES[@]}"; do
+            safe_run "DEBIAN_FRONTEND=noninteractive apt-get install -y $package" "Installing $package"
+        done
+
+    else
+        # x86_64 architecture - use ondrej/php PPA for PHP 8.2
+        safe_run "add-apt-repository -y ppa:ondrej/php" "Adding PHP PPA"
+        retry_run "apt-get update" "Updating after PPA" 3
+
+        PHP_PACKAGES=("php8.2" "php8.2-cli" "php8.2-sqlite3" "php8.2-xml" "php8.2-mbstring" "php8.2-curl" "php8.2-zip" "php8.2-gd" "php8.2-bcmath" "php8.2-intl" "php8.2-tokenizer")
+
+        for package in "${PHP_PACKAGES[@]}"; do
+            safe_run "DEBIAN_FRONTEND=noninteractive apt-get install -y $package" "Installing $package"
+        done
+    fi
+
+    # Set default PHP version
+    if [ -f /usr/bin/php8.2 ]; then
+        update-alternatives --set php /usr/bin/php8.2 2>/dev/null || ln -sf /usr/bin/php8.2 /usr/bin/php
+    elif [ -f /usr/bin/php8.1 ]; then
+        update-alternatives --set php /usr/bin/php8.1 2>/dev/null || ln -sf /usr/bin/php8.1 /usr/bin/php
+    fi
 
     if command -v php >/dev/null 2>&1; then
         log "✅ PHP: $(php --version | head -1)"
@@ -368,8 +469,10 @@ phase2_php() {
 
         if [ "$PHP_MAJOR" -ge 8 ] && [ "$PHP_MINOR" -ge 2 ]; then
             log_success "✅ PHP 8.2+ confirmed - Laravel 12 compatible"
+        elif [ "$PHP_MAJOR" -eq 8 ] && [ "$PHP_MINOR" -eq 1 ]; then
+            log_warning "⚠️ PHP 8.1 installed - May need to adjust Laravel version"
         else
-            log_error "❌ PHP version insufficient"
+            log_error "❌ PHP version insufficient for Laravel 12"
             exit 1
         fi
     else
