@@ -43,10 +43,21 @@ class User extends Authenticatable
      */
     protected $casts = [
         'email_verified_at' => 'datetime',
-        'password' => 'hashed',
+        // Removed 'password' => 'hashed' - Laravel 9+ feature, use mutator instead
         // Removed 'is_active' and 'license_expires_at' from casts,
         // as their status is now derived from the related License model.
     ];
+
+    /**
+     * Set the user's password (Laravel 8 compatible mutator).
+     *
+     * @param  string  $value
+     * @return void
+     */
+    public function setPasswordAttribute($value)
+    {
+        $this->attributes['password'] = bcrypt($value);
+    }
 
     /**
      * Define the relationship with the License model.
