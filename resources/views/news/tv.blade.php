@@ -4,15 +4,66 @@
 <meta charset="UTF-8">
 <title>News</title>
 <style>
-body { margin:0; padding:0; background:#000; color:#fff; font-family:Arial; font-size:24px; }
-.header { background:#222; padding:20px; text-align:center; }
-.header h1 { font-size:48px; margin:10px 0; color:#fff; }
-.slide { display:none; text-align:center; padding:20px; min-height:400px; }
-.slide.active { display:block; }
-.slide img { max-width:90%; height:auto; margin:20px auto; display:block; }
-.slide h2 { font-size:36px; color:#fff; margin:20px 0; }
-.slide p { font-size:24px; color:#ccc; line-height:1.5; max-width:1200px; margin:10px auto; }
-.footer { background:#222; padding:15px; text-align:center; position:fixed; bottom:0; width:100%; }
+body {
+    margin:0;
+    padding:0;
+    background:#000;
+    color:#fff;
+    font-family:Arial;
+    font-size:28px;
+    overflow:hidden;
+}
+.header {
+    background:#1a1a1a;
+    padding:25px;
+    text-align:center;
+    border-bottom:3px solid #444;
+}
+.header h1 {
+    font-size:56px;
+    margin:5px 0;
+    color:#fff;
+    font-weight:bold;
+}
+.slide {
+    display:none;
+    text-align:center;
+    padding:30px;
+}
+.slide.active {
+    display:block;
+}
+.slide img {
+    width:80%;
+    height:auto;
+    margin:10px auto 20px auto;
+    display:block;
+}
+.slide h2 {
+    font-size:44px;
+    color:#fff;
+    margin:20px 0;
+    font-weight:bold;
+    padding:0 20px;
+}
+.slide p {
+    font-size:32px;
+    color:#ddd;
+    line-height:1.6;
+    margin:15px auto;
+    padding:0 40px;
+    text-align:center;
+}
+.footer {
+    background:#1a1a1a;
+    padding:20px;
+    text-align:center;
+    position:fixed;
+    bottom:0;
+    width:100%;
+    font-size:20px;
+    border-top:3px solid #444;
+}
 </style>
 </head>
 <body>
