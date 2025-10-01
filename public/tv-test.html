@@ -1,0 +1,54 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>TV Test Page</title>
+    <style type="text/css">
+        body {
+            margin: 0;
+            padding: 50px;
+            font-family: Arial, sans-serif;
+            background-color: #000000;
+            color: #ffffff;
+            font-size: 48px;
+            text-align: center;
+        }
+        h1 {
+            font-size: 72px;
+            color: #00ff00;
+            margin-bottom: 30px;
+        }
+        p {
+            font-size: 36px;
+            margin: 20px 0;
+        }
+        .box {
+            background-color: #333333;
+            border: 5px solid #ffffff;
+            padding: 40px;
+            margin: 30px auto;
+            max-width: 1200px;
+        }
+    </style>
+</head>
+<body>
+    <h1>TV TEST PAGE - SUCCESS!</h1>
+    <div class="box">
+        <p>If you can see this, your TV browser is working!</p>
+        <p>Screen is displaying correctly.</p>
+        <p>Time: <span id="time"></span></p>
+    </div>
+
+    <script type="text/javascript">
+        function updateTime() {
+            var now = new Date();
+            var timeStr = now.getHours() + ':' +
+                         (now.getMinutes() < 10 ? '0' : '') + now.getMinutes() + ':' +
+                         (now.getSeconds() < 10 ? '0' : '') + now.getSeconds();
+            document.getElementById('time').innerHTML = timeStr;
+        }
+        updateTime();
+        setInterval(updateTime, 1000);
+    </script>
+</body>
+</html>
