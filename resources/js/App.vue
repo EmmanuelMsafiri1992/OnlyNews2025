@@ -120,9 +120,13 @@ export default {
   methods: {
     processImageArray(images, item) {
         if (!Array.isArray(images) || images.length === 0) {
+            // API returns flat structure - each item is already a slide with image_url and slide_duration
             const primaryImageUrl = this.processImageUrl(item.image_url || item.image);
             if (primaryImageUrl !== this.fallbackImage) {
-                return [{ url: primaryImageUrl, duration: this.slideInterval }];
+                return [{
+                    url: primaryImageUrl,
+                    duration: parseInt(item.slide_duration, 10) || this.slideInterval
+                }];
             }
             return [];
         }
