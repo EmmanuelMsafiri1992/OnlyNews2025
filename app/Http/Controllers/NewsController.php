@@ -8,10 +8,32 @@ use Illuminate\Support\Facades\Log;
 
 class NewsController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $news = News::all();
-        return view('news.index', compact('news')); // Example for admin view
+        // Check if request is from old TV browser (no ES6 support)
+        $userAgent = $request->header('User-Agent', '');
+        $isOldBrowser = (
+            stripos($userAgent, 'Tizen') !== false ||
+            stripos($userAgent, 'WebOS') !== false ||
+            stripos($userAgent, 'NetCast') !== false ||
+            stripos($userAgent, 'SmartTV') !== false
+        );
+
+        if ($isOldBrowser || $request->get('legacy') === '1') {
+            // Serve simple server-rendered page for old browsers/TVs
+            $news = News::with('category', 'images')->get();
+            $settings = \App\Models\Setting::pluck('value', 'key');
+
+            return response()
+                ->view('news.simple', compact('news', 'settings'))
+                ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
+                ->header('Pragma', 'no-cache')
+                ->header('Expires', '0');
+        }
+
+        // Regular Vue app for modern browsers
+        $news = News::with('category', 'images')->get();
+        return view('news.index', compact('news'));
     }
 
     // public function apiIndex()

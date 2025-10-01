@@ -12,10 +12,8 @@ use App\Http\Middleware\CheckLicense;
 use App\Http\Controllers\LicenseActivationController;
 
 
-// Public landing page - loads Vue app
-Route::get('/', function () {
-    return view('layouts.app');
-});
+// Public landing page - loads Vue app or simple page for TVs
+Route::get('/', [NewsController::class, 'index'])->name('home');
 
 // Public news page (non-admin)
 Route::get('/news', [NewsController::class, 'index'])->name('news.index');
