@@ -558,18 +558,18 @@ phase8_services() {
     PHP_BIN=$(which php)
     NPM_BIN=$(which npm)
 
-    cat > /etc/systemd/system/newsapp.service << EOF
+    cat > /etc/systemd/system/newsapp.service << 'EOF'
 [Unit]
 Description=NewsApp Laravel Application
 After=network.target
 
 [Service]
 Type=simple
-User=www-data
-Group=www-data
+User=root
+Group=root
 WorkingDirectory=/opt/newsapp
 Environment=PATH=/usr/bin:/usr/local/bin
-ExecStart=$PHP_BIN artisan serve --host=0.0.0.0 --port=8000
+ExecStart=/usr/bin/php artisan serve --host=0.0.0.0 --port=8000
 Restart=always
 RestartSec=10
 
@@ -577,18 +577,18 @@ RestartSec=10
 WantedBy=multi-user.target
 EOF
 
-    cat > /etc/systemd/system/newsapp-vite.service << EOF
+    cat > /etc/systemd/system/newsapp-vite.service << 'EOF'
 [Unit]
 Description=NewsApp Vite Server
 After=network.target
 
 [Service]
 Type=simple
-User=www-data
-Group=www-data
+User=root
+Group=root
 WorkingDirectory=/opt/newsapp
 Environment=PATH=/usr/bin:/usr/local/bin
-ExecStart=$NPM_BIN run dev
+ExecStart=/usr/bin/npm run dev
 Restart=always
 RestartSec=10
 
