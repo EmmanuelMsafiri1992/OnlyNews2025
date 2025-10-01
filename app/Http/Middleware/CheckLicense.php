@@ -34,34 +34,34 @@ class CheckLicense
             }
 
             // For all other authenticated users (non-superadmins) accessing admin routes,
-            // perform the global application license check first.
+            // check if there's a global application license set.
             $licenseKeySetting = Setting::where('key', 'license_key')->first();
             $expirationDateSetting = Setting::where('key', 'license_expiration_date')->first();
 
-            $licenseKey = $licenseKeySetting ? $licenseKeySetting->value : null;
-            $expirationDate = $expirationDateSetting ? ($expirationDateSetting->value ? Carbon::parse($expirationDateSetting->value) : null) : null;
+            $globalLicenseKey = $licenseKeySetting ? $licenseKeySetting->value : null;
+            $globalExpirationDate = $expirationDateSetting ? ($expirationDateSetting->value ? Carbon::parse($expirationDateSetting->value) : null) : null;
 
-            $isLicensed = !empty($licenseKey);
-            $isExpired = $expirationDate && $expirationDate->isPast();
+            $hasGlobalLicense = !empty($globalLicenseKey);
+            $globalLicenseExpired = $globalExpirationDate && $globalExpirationDate->isPast();
 
             Log::info('Global license check', [
-                'has_key' => $isLicensed,
-                'expiration' => $expirationDate ? $expirationDate->toDateTimeString() : 'N/A',
-                'is_expired' => $isExpired
+                'has_key' => $hasGlobalLicense,
+                'expiration' => $globalExpirationDate ? $globalExpirationDate->toDateTimeString() : 'N/A',
+                'is_expired' => $globalLicenseExpired
             ]);
 
-            // If no global license key is set OR global license is expired
-            if (!$isLicensed || $isExpired) {
-                Log::warning('Global license check failed - logging out user', ['user_id' => $user->id]);
+            // If a global license IS set, check if it's valid
+            // If no global license is set, skip to individual license check
+            if ($hasGlobalLicense && $globalLicenseExpired) {
+                Log::warning('Global license is set but expired - logging out user', ['user_id' => $user->id]);
                 Auth::logout(); // Log out the user
                 $request->session()->invalidate(); // Invalidate the session
                 $request->session()->regenerateToken(); // Regenerate CSRF token
-                session()->flash('error', __('Your application license is invalid or has expired. Please contact your administrator.'));
+                session()->flash('error', __('Your application license has expired. Please contact your administrator.'));
                 return redirect()->route('login');
             }
 
-            // After the global license check, check the individual user's license status.
-            // This block will only be reached by non-superadmins if the global license is valid.
+            // Check the individual user's license status.
             $user->load('license');
             Log::info('Individual license check', [
                 'user_id' => $user->id,
