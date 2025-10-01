@@ -11,7 +11,6 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Intervention\Image\ImageManager;
-use Intervention\Image\Drivers\Gd\Driver;
 use Illuminate\Validation\ValidationException;
 
 class NewsController extends Controller
@@ -206,7 +205,7 @@ public function destroy(News $news)
      */
     private function processAndStoreImages(array $imageFiles, News $news, int $slideDuration)
     {
-        $manager = new ImageManager(new Driver());
+        $manager = new ImageManager(['driver' => 'gd']);
 
         foreach ($imageFiles as $imageFile) {
             if (!$this->isValidImage($imageFile)) {
@@ -214,7 +213,7 @@ public function destroy(News $news)
                 continue;
             }
 
-            $image = $manager->read($imageFile->getRealPath());
+            $image = $manager->make($imageFile->getRealPath());
 
             // Get original dimensions
             $originalWidth = $image->width();
@@ -223,7 +222,6 @@ public function destroy(News $news)
             $imageSizesData = []; // To store path, width, height for each size
 
             // Define target sizes for compression and resizing
-            // The toJpeg(80) call applies 80% quality compression.
             $targetSizes = [
                 'thumbnail' => ['width' => 150, 'height' => 150],
                 'medium' => ['width' => 600, 'height' => 400],
@@ -231,10 +229,14 @@ public function destroy(News $news)
             ];
 
             foreach ($targetSizes as $name => $dims) {
-                // Clone the image instance to avoid modifying the original for subsequent resizes
-                $resizedImage = $image->scaleDown($dims['width'], $dims['height']); // Use scaleDown to maintain aspect ratio and not upscale
+                // Create fresh image for each resize to avoid mutations
+                $resizedImage = $manager->make($imageFile->getRealPath());
+                $resizedImage->resize($dims['width'], $dims['height'], function ($constraint) {
+                    $constraint->aspectRatio();
+                    $constraint->upsize();
+                });
                 $path = 'news_images/' . $name . '/' . Str::random(20) . '.jpg';
-                Storage::disk('public')->put($path, (string) $resizedImage->toJpeg(80)); // Compression at 80% quality
+                Storage::disk('public')->put($path, (string) $resizedImage->encode('jpg', 80));
                 $imageSizesData[$name] = [
                     'path' => $path,
                     'width' => $resizedImage->width(),
