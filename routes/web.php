@@ -12,7 +12,7 @@ use App\Http\Middleware\CheckLicense;
 use App\Http\Controllers\LicenseActivationController;
 
 
-// Public landing page
+// Public landing page - loads Vue app
 Route::get('/', function () {
     return view('layouts.app');
 });
