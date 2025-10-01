@@ -56,11 +56,13 @@ class LoginController extends Controller
 
         // For all other authenticated users (non-superadmins), check their license status.
         if (!$user->hasActiveLicense()) {
-            // If the license is not active, flash an error message
-            session()->flash('error', __('Your license is invalid or has expired. Please activate a new license.'));
+            // Log out the user to prevent session issues
+            Auth::logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
 
-            // Redirect to the license expired page without logging out
-            return redirect()->route('license.expired');
+            session()->flash('error', __('Your license is invalid or has expired. Please contact your administrator.'));
+            return redirect()->route('login');
         }
 
         // If the user is a non-superadmin with an active license, or a superadmin,

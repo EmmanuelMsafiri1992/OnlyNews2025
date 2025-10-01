@@ -27,16 +27,8 @@ class CheckLicense
 
             // If the user is a superadmin, bypass all license checks and proceed.
             if ($user && $user->isSuperAdmin()) {
-                \Log::info('Superadmin detected in CheckLicense, bypassing license check', ['user_id' => $user->id, 'email' => $user->email]);
                 return $next($request);
             }
-
-            \Log::info('CheckLicense middleware running', [
-                'user_id' => $user ? $user->id : 'null',
-                'user_email' => $user ? $user->email : 'null',
-                'user_role' => $user ? $user->role : 'null',
-                'is_superadmin' => $user ? $user->isSuperAdmin() : false
-            ]);
 
             // For all other authenticated users (non-superadmins) accessing admin routes,
             // perform the global application license check first.
@@ -51,17 +43,21 @@ class CheckLicense
 
             // If no global license key is set OR global license is expired
             if (!$isLicensed || $isExpired) {
-                session()->flash('error', __('Your application license is invalid or has expired. Please renew your license to continue.'));
-                // Keep the user authenticated so they can activate their personal license if needed.
-                return redirect()->route('license.expired');
+                Auth::logout(); // Log out the user
+                $request->session()->invalidate(); // Invalidate the session
+                $request->session()->regenerateToken(); // Regenerate CSRF token
+                session()->flash('error', __('Your application license is invalid or has expired. Please contact your administrator.'));
+                return redirect()->route('login');
             }
 
             // After the global license check, check the individual user's license status.
             // This block will only be reached by non-superadmins if the global license is valid.
             if (!$user->hasActiveLicense()) {
-                session()->flash('error', __('Your license is invalid or has expired. Please activate a new license.'));
-                // Keep the user authenticated so they can activate their license.
-                return redirect()->route('license.expired');
+                Auth::logout(); // Log out the user
+                $request->session()->invalidate(); // Invalidate the session
+                $request->session()->regenerateToken(); // Regenerate CSRF token
+                session()->flash('error', __('Your license is invalid or has expired. Please contact your administrator to activate a license.'));
+                return redirect()->route('login');
             }
         }
 
