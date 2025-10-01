@@ -10,6 +10,8 @@ class Image extends Model
 
        protected $casts = [
         'sizes' => 'array',
+        'news_id' => 'integer',
+        'slide_duration' => 'integer',
     ];
 
 

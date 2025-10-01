@@ -171,8 +171,9 @@ public function destroy(News $news)
     public function destroyImage(News $news, Image $image)
     {
         try {
-            // Ensure the image belongs to the news article
-            if ($image->news_id !== $news->id) {
+            // Ensure the image belongs to the news article (use loose comparison to handle type differences)
+            if ($image->news_id != $news->id) {
+                Log::warning("Image deletion failed: Image {$image->id} (news_id: {$image->news_id}) does not belong to News {$news->id}");
                 return response()->json(['success' => false, 'message' => 'Image does not belong to this news article.'], 403);
             }
 
