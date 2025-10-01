@@ -48,14 +48,14 @@ class LicenseActivationController extends Controller
             $license->user_id = $user->id; // Associate the license with the user
             $license->save();
 
-            // Update the user's license details
-            $user->is_active = true;
-            $user->license_expires_at = $license->expires_at;
-            $user->save();
+            // Refresh the user instance to reload the license relationship
+            $user->refresh();
+            $user->load('license');
 
-            // Log the user back in to refresh their session with the new license status
-            // This is important because the middleware checks the session user object.
-            Auth::login($user);
+            // Verify the license is now active
+            if (!$user->hasActiveLicense()) {
+                return redirect()->back()->with('error', __('License activation failed. Please contact support.'));
+            }
 
             return redirect()->intended('/admin/dashboard')->with('success', __('License activated successfully! You can now access your account.'));
 

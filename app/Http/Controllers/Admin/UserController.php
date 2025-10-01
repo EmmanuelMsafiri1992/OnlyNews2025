@@ -151,6 +151,11 @@ class UserController extends Controller
             // Log the parsed Carbon date if it's not null, otherwise 'null'
             Log::info('License expires_at will be set to: ' . ($license->expires_at ? Carbon::parse($license->expires_at)->format('Y-m-d H:i:s') : 'null'));
 
+            // If license doesn't have a code, generate one (for admin-created licenses)
+            if (empty($license->code)) {
+                $license->code = 'ADMIN-' . strtoupper(bin2hex(random_bytes(8)));
+                Log::info('Generated license code: ' . $license->code);
+            }
 
             $license->save(); // Save the license record
 
