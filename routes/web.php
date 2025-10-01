@@ -30,7 +30,7 @@ Route::get('/license-expired', function () {
 Route::post('/license/activate', [LicenseActivationController::class, 'activate'])->name('license.activate');
 
 // Admin routes
-Route::prefix('admin')->middleware(['auth', SetAdminLocale::class])->group(function () {
+Route::prefix('admin')->middleware(['auth', SetAdminLocale::class, CheckLicense::class])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
     Route::get('/settings', [DashboardController::class, 'settings'])->name('admin.settings');
     Route::post('/settings/password', [DashboardController::class, 'updatePassword'])->name('admin.settings.password');
