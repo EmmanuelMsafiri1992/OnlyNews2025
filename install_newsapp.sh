@@ -24,8 +24,8 @@ echo "NewsApp Installation Started: $(date)" > "$LOG_FILE"
 echo -e "${PURPLE}╔══════════════════════════════════════════════════════════════╗${NC}"
 echo -e "${PURPLE}║          🚀 NEWSAPP BULLETPROOF INSTALLER 🚀                ║${NC}"
 echo -e "${PURPLE}║                                                              ║${NC}"
-echo -e "${PURPLE}║  Fresh NanoPi → Fully Working Laravel 9 + Vue System       ║${NC}"
-echo -e "${PURPLE}║  ARM Support: PHP 7.4 on Ubuntu 20.04                      ║${NC}"
+echo -e "${PURPLE}║  Fresh NanoPi → Fully Working Laravel 8 + Vue System       ║${NC}"
+echo -e "${PURPLE}║  ARM Support: PHP 7.4 + Laravel 8 on Ubuntu 20.04          ║${NC}"
 echo -e "${PURPLE}║  x86_64 Support: PHP 8.2 + Laravel 12                      ║${NC}"
 echo -e "${PURPLE}║                                                              ║${NC}"
 echo -e "${PURPLE}╚══════════════════════════════════════════════════════════════╝${NC}"
@@ -377,7 +377,7 @@ phase2_php() {
     ARCH=$(uname -m)
     if [[ "$ARCH" == "armv7l" || "$ARCH" == "aarch64" ]]; then
         log_warning "⚠️ ARM architecture detected ($ARCH)"
-        log_info "Installing PHP 7.4 for Laravel 9 compatibility on Ubuntu $OS_VERSION"
+        log_info "Installing PHP 7.4 for Laravel 8 compatibility on Ubuntu $OS_VERSION"
 
         # Install PHP 7.4 (available in Ubuntu 20.04)
         retry_run "apt-get update" "Updating package lists" 3
@@ -417,7 +417,7 @@ phase2_php() {
         elif [ "$PHP_MAJOR" -eq 8 ] && [ "$PHP_MINOR" -eq 1 ]; then
             log_success "✅ PHP 8.1 installed - Laravel 9/10 compatible"
         elif [ "$PHP_MAJOR" -eq 7 ] && [ "$PHP_MINOR" -eq 4 ]; then
-            log_success "✅ PHP 7.4 installed - Laravel 9 compatible"
+            log_success "✅ PHP 7.4 installed - Laravel 8 compatible"
         else
             log_warning "⚠️ PHP $PHP_MAJOR.$PHP_MINOR installed - May need version adjustment"
         fi
