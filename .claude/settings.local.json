@@ -29,7 +29,9 @@
       "Bash(npm install)",
       "Bash(for file in auth cache cors filesystems logging mail queue sanctum services session)",
       "Bash(do curl -s \"https://raw.githubusercontent.com/laravel/laravel/8.x/config/$file.php\" -o \"$file.php\")",
-      "Bash(done)"
+      "Bash(done)",
+      "Bash(rm:*)",
+      "Bash(git check-ignore:*)"
     ],
     "deny": [],
     "ask": []

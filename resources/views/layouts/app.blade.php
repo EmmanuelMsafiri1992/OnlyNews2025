@@ -46,8 +46,59 @@
         {{-- This is the mount point for your Vue.js application.
              Your resources/js/app.js will mount App.vue here. --}}
         <div id="app" class="flex-1">
-            {{-- App.vue will render its entire content here --}}
+            {{-- Fallback content for browsers that don't support modern JavaScript --}}
+            <noscript>
+                <div style="min-height: 100vh; display: flex; align-items: center; justify-center; flex-direction: column; padding: 2rem; text-align: center; font-family: Inter, sans-serif;">
+                    <h1 style="font-size: 2rem; margin-bottom: 1rem;">JavaScript Required</h1>
+                    <p style="font-size: 1.25rem; color: #666;">This application requires JavaScript to be enabled.</p>
+                </div>
+            </noscript>
+            {{-- Loading fallback for older browsers --}}
+            <div id="browser-check" style="display: none;">
+                <div style="min-height: 100vh; display: flex; align-items: center; justify-center; flex-direction: column; padding: 2rem; text-align: center; font-family: Inter, sans-serif;">
+                    <h1 style="font-size: 2rem; margin-bottom: 1rem;">Browser Not Supported</h1>
+                    <p style="font-size: 1.25rem; color: #666; margin-bottom: 2rem;">Your browser does not support modern features required by this application.</p>
+                    <p style="font-size: 1rem; color: #999;">Please use a modern browser or update your current browser.</p>
+                </div>
+            </div>
         </div>
+
+        {{-- Browser compatibility check script (runs before Vue) --}}
+        <script>
+            (function() {
+                // Check for essential modern browser features
+                var isModernBrowser = (
+                    'Promise' in window &&
+                    'fetch' in window &&
+                    'Map' in window &&
+                    'Set' in window
+                );
+
+                if (!isModernBrowser) {
+                    document.getElementById('browser-check').style.display = 'flex';
+                    document.getElementById('app').style.display = 'none';
+                    return;
+                }
+
+                // Add a timeout to detect if Vue app fails to load
+                var appMountTimeout = setTimeout(function() {
+                    var appElement = document.getElementById('app');
+                    if (appElement && appElement.children.length === 2) { // Only noscript and browser-check divs
+                        document.getElementById('browser-check').style.display = 'flex';
+                    }
+                }, 10000); // 10 second timeout
+
+                // Clear timeout if app loads successfully
+                window.addEventListener('load', function() {
+                    setTimeout(function() {
+                        var appElement = document.getElementById('app');
+                        if (appElement && appElement.children.length > 2) {
+                            clearTimeout(appMountTimeout);
+                        }
+                    }, 1000);
+                });
+            })();
+        </script>
 
         {{-- Load Vite assets manually for Laravel 8 compatibility --}}
         @if (file_exists(public_path('build/manifest.json')))
