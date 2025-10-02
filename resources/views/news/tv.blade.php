@@ -62,9 +62,23 @@
         }
 
         .grid-container {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 32px;
+            display: table;
+            width: 100%;
+            table-layout: fixed;
+        }
+
+        .grid-container > div {
+            display: table-cell;
+            width: 50%;
+            vertical-align: top;
+        }
+
+        .grid-container > div:first-child {
+            padding-right: 16px;
+        }
+
+        .grid-container > div:last-child {
+            padding-left: 16px;
         }
 
         /* Card Styles */
