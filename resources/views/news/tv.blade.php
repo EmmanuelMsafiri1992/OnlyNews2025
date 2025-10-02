@@ -19,6 +19,7 @@
             background: #f9fafb;
             color: #1f2937;
             line-height: 1.6;
+            overflow-x: hidden;
         }
 
         /* Header */
@@ -31,18 +32,22 @@
         .header-content {
             width: 100%;
             padding: 0 24px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            position: relative;
+            text-align: center;
         }
 
         .header h1 {
             font-size: 28px;
             font-weight: 400;
             color: #ffffff;
+            margin: 0;
         }
 
         .header-nav {
+            position: absolute;
+            right: 24px;
+            top: 50%;
+            transform: translateY(-50%);
             display: flex;
             gap: 32px;
         }
@@ -58,6 +63,7 @@
         .main-container {
             width: 100%;
             padding: 24px;
+            padding-bottom: 100px;
         }
 
         .grid-container {
@@ -88,7 +94,7 @@
             border-radius: 12px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
             overflow: hidden;
-            height: 70vh;
+            height: calc(100vh - 240px);
             position: relative;
         }
 
@@ -214,12 +220,13 @@
             color: #ffffff;
             line-height: 1.3;
             text-align: right;
+            direction: rtl;
         }
 
         .content-body {
             padding: 32px;
             background: #2563eb;
-            height: calc(70vh - 112px);
+            height: calc(100vh - 352px);
             overflow-y: auto;
         }
 
@@ -253,6 +260,8 @@
             color: rgba(255,255,255,0.9);
             font-size: 16px;
             line-height: 1.6;
+            direction: rtl;
+            text-align: right;
         }
 
         /* Footer */
@@ -262,7 +271,11 @@
             text-align: center;
             color: #a0aec0;
             font-size: 14px;
-            margin-top: 48px;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 1;
         }
 
         .footer-content {
