@@ -108,54 +108,40 @@
 
         .slide-image-container {
             flex: 1;
-            background: #000000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            background: #f3f4f6;
+            position: relative;
             overflow: hidden;
             min-height: 600px;
         }
 
         .slide-image {
-            max-width: 100%;
-            max-height: 100%;
-            object-fit: contain;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
 
         .slide-info {
-            padding: 32px;
-            background: #ffffff;
-        }
-
-        .slide-category {
-            display: inline-block;
-            background: #3b82f6;
-            color: #ffffff;
-            padding: 6px 16px;
-            border-radius: 20px;
-            font-size: 14px;
-            font-weight: 600;
-            margin-bottom: 16px;
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 48px 32px 32px;
+            background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.4) 50%, transparent 100%);
         }
 
         .slide-title {
-            font-size: 36px;
+            font-size: 32px;
             font-weight: 700;
-            color: #1f2937;
-            margin-bottom: 16px;
+            color: #ffffff;
+            margin-bottom: 12px;
             line-height: 1.2;
-        }
-
-        .slide-description {
-            font-size: 18px;
-            color: #6b7280;
-            line-height: 1.6;
-            margin-bottom: 16px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
         }
 
         .slide-date {
-            font-size: 14px;
-            color: #9ca3af;
+            font-size: 16px;
+            color: rgba(255,255,255,0.9);
+            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
         }
 
         /* Right Column - News List */
@@ -282,14 +268,12 @@
                                      data-news-id="{{ $newsItem->id }}">
                                     <div class="slide-image-container">
                                         <img src="{{ asset('storage/' . $image->url) }}"
-                                             alt="{{ $newsItem->title }}"
+                                             alt="{{ strip_tags($newsItem->title) }}"
                                              class="slide-image">
-                                    </div>
-                                    <div class="slide-info">
-                                        <span class="slide-category">{{ $newsItem->category->name ?? 'חוקים' }}</span>
-                                        <h2 class="slide-title">{{ $newsItem->title }}</h2>
-                                        <p class="slide-description">{{ strip_tags($newsItem->description) }}</p>
-                                        <div class="slide-date">{{ $newsItem->created_at->format('M d, Y') }}</div>
+                                        <div class="slide-info">
+                                            <h2 class="slide-title">{{ strip_tags($newsItem->title) }}</h2>
+                                            <div class="slide-date">{{ $newsItem->created_at->format('M d, Y') }}</div>
+                                        </div>
                                     </div>
                                 </div>
                                 @php $slideIndex++; @endphp
@@ -299,11 +283,11 @@
                                  data-index="{{ $slideIndex }}"
                                  data-duration="5000"
                                  data-news-id="{{ $newsItem->id }}">
-                                <div class="slide-info" style="padding: 80px 48px;">
-                                    <span class="slide-category">{{ $newsItem->category->name ?? 'חוקים' }}</span>
-                                    <h2 class="slide-title">{{ $newsItem->title }}</h2>
-                                    <p class="slide-description">{{ strip_tags($newsItem->description) }}</p>
-                                    <div class="slide-date">{{ $newsItem->created_at->format('M d, Y') }}</div>
+                                <div class="slide-image-container" style="background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%); display: flex; align-items: center; justify-content: center;">
+                                    <div style="text-align: center; padding: 48px; color: white;">
+                                        <h2 class="slide-title" style="font-size: 48px; margin-bottom: 24px;">{{ strip_tags($newsItem->title) }}</h2>
+                                        <div class="slide-date" style="font-size: 20px;">{{ $newsItem->created_at->format('M d, Y') }}</div>
+                                    </div>
                                 </div>
                             </div>
                             @php $slideIndex++; @endphp
@@ -319,7 +303,7 @@
                             <div class="news-item {{ $itemIndex === 0 ? 'active' : '' }}"
                                  data-news-id="{{ $newsItem->id }}"
                                  onclick="highlightNews({{ $newsItem->id }})">
-                                <h3 class="news-item-title">{{ $newsItem->title }}</h3>
+                                <h3 class="news-item-title">{{ strip_tags($newsItem->title) }}</h3>
                                 <div class="news-item-meta">
                                     <span class="news-item-date">📅 {{ $newsItem->created_at->format('M d, Y') }}</span>
                                     <span class="news-item-category">📂 {{ $newsItem->category->name ?? 'News' }}</span>
