@@ -70,7 +70,7 @@
         .main-container {
             width: 100%;
             padding: 24px;
-            padding-bottom: 24px;
+            padding-bottom: 100px;
         }
 
         .grid-container {
@@ -101,7 +101,7 @@
             border-radius: 12px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
             overflow: hidden;
-            height: calc(100vh - 180px);
+            height: calc(100vh - 240px);
             position: relative;
         }
 
@@ -233,7 +233,7 @@
         .content-body {
             padding: 32px;
             background: #2563eb;
-            height: calc(100vh - 310px);
+            height: calc(100vh - 370px);
             overflow: hidden;
         }
 
@@ -274,7 +274,7 @@
         /* Footer */
         .footer {
             background: #2d3748;
-            padding: 16px 48px;
+            padding: 24px 48px;
             text-align: center;
             color: #a0aec0;
             font-size: 14px;
