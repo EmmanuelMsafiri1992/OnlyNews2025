@@ -10,61 +10,19 @@ class NewsController extends Controller
 {
     public function index(Request $request)
     {
-        // Get user agent for detection
+        // Get user agent for debugging
         $userAgent = strtolower($request->header('User-Agent', ''));
-
-        // Log the user agent for debugging
         Log::info('Browser accessing app', ['user_agent' => $userAgent]);
 
-        // Check for old Chrome/Chromium versions
-        $chromeVersion = 999;
-        if (preg_match('/chrome\/([0-9]+)/i', $userAgent, $matches)) {
-            $chromeVersion = (int)$matches[1];
-        } elseif (preg_match('/chromium\/([0-9]+)/i', $userAgent, $matches)) {
-            $chromeVersion = (int)$matches[1];
-        }
-
-        // Comprehensive TV and old browser detection
-        $isOldBrowser = (
-            // Old Chrome/Chromium (< 60 is too old for modern JS)
-            $chromeVersion < 60 ||
-            // TV platforms
-            stripos($userAgent, 'tizen') !== false ||
-            stripos($userAgent, 'webos') !== false ||
-            stripos($userAgent, 'netcast') !== false ||
-            stripos($userAgent, 'smarttv') !== false ||
-            stripos($userAgent, 'smart-tv') !== false ||
-            stripos($userAgent, 'googletv') !== false ||
-            stripos($userAgent, 'appletv') !== false ||
-            stripos($userAgent, 'hbbtv') !== false ||
-            stripos($userAgent, 'maple') !== false ||
-            stripos($userAgent, 'sonydtv') !== false ||
-            stripos($userAgent, 'viera') !== false ||
-            // TV brands
-            stripos($userAgent, 'samsung') !== false ||
-            stripos($userAgent, 'lg') !== false ||
-            stripos($userAgent, 'philips') !== false ||
-            stripos($userAgent, 'sharp') !== false ||
-            stripos($userAgent, 'panasonic') !== false ||
-            stripos($userAgent, 'sony') !== false ||
-            stripos($userAgent, 'vizio') !== false ||
-            // Old browsers
-            stripos($userAgent, 'msie') !== false ||
-            stripos($userAgent, 'trident') !== false ||
-            // Opera TV/Mini
-            (stripos($userAgent, 'opera') !== false && (stripos($userAgent, 'tv') !== false || stripos($userAgent, 'mini') !== false))
-        );
-
-        // Force simple mode with ?simple=1 or ?legacy=1 parameter, OR if detected as old browser
-        if ($isOldBrowser || $request->get('legacy') === '1' || $request->get('simple') === '1') {
+        // Only serve simple HTML view if explicitly requested via parameter
+        // The Vue app's legacy plugin will handle browser compatibility automatically
+        if ($request->get('simple') === '1' || $request->get('tv') === '1') {
             try {
-                // Serve simple server-rendered page for old browsers/TVs
+                // Serve simple server-rendered page for TVs that explicitly request it
                 $news = News::with('category', 'images')->get();
                 $settings = \App\Models\Setting::pluck('value', 'key')->toArray();
 
-                Log::info('Serving simple TV view', [
-                    'user_agent' => $userAgent,
-                    'is_old_browser' => $isOldBrowser,
+                Log::info('Serving simple TV view (requested via parameter)', [
                     'news_count' => $news->count(),
                     'settings_count' => count($settings)
                 ]);
@@ -80,8 +38,9 @@ class NewsController extends Controller
             }
         }
 
-        // Regular Vue app for modern browsers
-        Log::info('Serving Vue app for modern browser');
+        // Serve Vue app with legacy support for all browsers (including old TVs)
+        // Vite's legacy plugin will automatically serve polyfilled version to old browsers
+        Log::info('Serving Vue app (with legacy browser support)');
         return view('layouts.app');
     }
 

@@ -27,30 +27,26 @@ export default defineConfig({
     }),
     vue(),
     legacy({
-      // Targets for broader compatibility, including older TV browsers and IE11
+      // Targets for maximum compatibility, including very old TV browsers like Chrome 25
       targets: [
-        'defaults', // Covers most modern browsers
-        'not IE 11', // Explicitly exclude IE 11 from default targets if you want to be more specific, but 'ie >= 11' below will handle it
+        'chrome >= 25', // Samsung TV 2014 models use Chrome 25
         'ie >= 11', // Support for Internet Explorer 11
-        'chrome >= 49', // Chrome for Android 4.4+ (older Tizen/WebOS might use older Chromium)
         'safari >= 9', // iOS Safari 9+
         'edge >= 12', // Microsoft Edge
-        'firefox >= 45', // Firefox
-        'samsung >= 5', // Samsung Internet Browser (common on Tizen TVs)
-        'opera >= 36', // Opera
-        'android >= 4.4', // Android WebView (older smart TVs might use this)
-        'last 2 versions', // Ensures recent browser versions are covered
+        'firefox >= 38', // Firefox ESR
+        'samsung >= 4', // Samsung Internet Browser (Tizen TVs)
+        'android >= 4.4', // Android WebView (older smart TVs)
       ],
       additionalLegacyPolyfills: [
         'regenerator-runtime/runtime', // For async/await
-        'core-js/es/array', // For array methods like includes, find
-        'core-js/es/promise', // For Promises
-        'core-js/es/symbol', // For Symbol
-        'core-js/es/object/assign', // For Object.assign
+        'core-js/stable', // Full core-js polyfills for ES5+ features
       ],
-      // This option ensures that modern code is not served to legacy browsers
-      // and only necessary polyfills are included.
+      // Render legacy chunks for all browsers
+      renderLegacyChunks: true,
+      // This ensures polyfills are included
       modernPolyfills: true,
+      // Explicitly set polyfills mode
+      polyfills: true,
     }),
   ],
   css: {
@@ -65,11 +61,10 @@ export default defineConfig({
     },
   },
   build: {
-    // This defines the lowest ES version that your *output* JS should be compatible with.
-    // 'es5' is recommended for maximum compatibility with older TV browsers.
-    target: 'es5',
+    // Don't set target here - let legacy plugin handle it
     minify: true, // Ensure code is minified for production
     cssCodeSplit: true, // Split CSS into chunks
     sourcemap: false, // Disable sourcemaps for production builds to reduce size
+    cssMinify: 'esbuild', // Use esbuild for CSS minification (handles invalid selectors better)
   }
 });
