@@ -67,14 +67,14 @@
 
         .left-column {
             float: left;
-            width: 48%;
-            margin-right: 2%;
+            width: 49%;
+            margin-right: 1%;
         }
 
         .right-column {
             float: left;
-            width: 48%;
-            margin-left: 2%;
+            width: 49%;
+            margin-left: 1%;
         }
 
         .clearfix:after {
@@ -87,9 +87,10 @@
         .card {
             background: #ffffff;
             border-radius: 12px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
             overflow: hidden;
             height: 600px;
+            position: relative;
         }
 
         /* Left Column - Slider */
@@ -119,8 +120,8 @@
             bottom: 0;
             left: 0;
             right: 0;
-            padding: 40px 32px 24px;
-            background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.4) 60%, transparent 100%);
+            padding: 60px 32px 24px;
+            background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.5) 70%, transparent 100%);
         }
 
         .slide-title {
@@ -176,21 +177,21 @@
         /* Navigation Dots */
         .nav-dots {
             position: absolute;
-            bottom: 24px;
+            bottom: 80px;
             left: 50%;
             transform: translateX(-50%);
-            display: flex;
-            gap: 12px;
             z-index: 10;
         }
 
         .nav-dot {
-            width: 12px;
-            height: 12px;
+            width: 14px;
+            height: 14px;
             border-radius: 50%;
-            background: rgba(255,255,255,0.5);
+            background: rgba(255,255,255,0.6);
             border: none;
             cursor: pointer;
+            margin: 0 6px;
+            display: inline-block;
         }
 
         .nav-dot.active {
@@ -200,27 +201,26 @@
         /* Right Column - Content Card */
         .content-card {
             background: #3b82f6;
-            display: flex;
-            flex-direction: column;
         }
 
         .content-header {
             padding: 32px;
-            border-bottom: 1px solid rgba(255,255,255,0.2);
+            border-bottom: 1px solid rgba(255,255,255,0.3);
+            background: #3b82f6;
         }
 
         .content-title {
-            font-size: 32px;
+            font-size: 36px;
             font-weight: 700;
             color: #ffffff;
-            line-height: 1.2;
+            line-height: 1.3;
             text-align: right;
         }
 
         .content-body {
             padding: 32px;
             background: #2563eb;
-            flex: 1;
+            height: 488px;
             overflow-y: auto;
         }
 
