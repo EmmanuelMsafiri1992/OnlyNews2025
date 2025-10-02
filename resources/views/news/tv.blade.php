@@ -19,7 +19,6 @@
             background: #f9fafb;
             color: #1f2937;
             line-height: 1.6;
-            overflow-x: hidden;
         }
 
         /* Header */
@@ -30,31 +29,22 @@
         }
 
         .header-content {
-            width: 100%;
-            padding: 0 24px;
-            position: relative;
-            min-height: 40px;
+            max-width: 1800px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
         .header h1 {
-            font-size: 32px;
+            font-size: 28px;
             font-weight: 400;
             color: #ffffff;
-            margin: 0;
-            text-align: center;
-            position: absolute;
-            left: 50%;
-            top: 50%;
-            transform: translate(-50%, -50%);
-            width: auto;
-            white-space: nowrap;
         }
 
         .header-nav {
-            position: absolute;
-            right: 24px;
-            top: 50%;
-            transform: translateY(-50%);
+            display: flex;
+            gap: 32px;
         }
 
         .header-nav a {
@@ -62,15 +52,13 @@
             text-decoration: none;
             font-size: 16px;
             font-weight: 400;
-            margin-left: 32px;
         }
-
 
         /* Main Container */
         .main-container {
-            width: 100%;
-            padding: 24px;
-            padding-bottom: 100px;
+            max-width: 1800px;
+            margin: 0 auto;
+            padding: 48px;
         }
 
         .grid-container {
@@ -79,14 +67,14 @@
 
         .left-column {
             float: left;
-            width: 49%;
-            margin-right: 1%;
+            width: 48%;
+            margin-right: 2%;
         }
 
         .right-column {
             float: left;
-            width: 49%;
-            margin-left: 1%;
+            width: 48%;
+            margin-left: 2%;
         }
 
         .clearfix:after {
@@ -99,10 +87,9 @@
         .card {
             background: #ffffff;
             border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
             overflow: hidden;
-            height: calc(100vh - 240px);
-            position: relative;
+            height: 600px;
         }
 
         /* Left Column - Slider */
@@ -132,8 +119,8 @@
             bottom: 0;
             left: 0;
             right: 0;
-            padding: 60px 32px 24px;
-            background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.5) 70%, transparent 100%);
+            padding: 40px 32px 24px;
+            background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.4) 60%, transparent 100%);
         }
 
         .slide-title {
@@ -189,21 +176,21 @@
         /* Navigation Dots */
         .nav-dots {
             position: absolute;
-            bottom: 80px;
+            bottom: 24px;
             left: 50%;
             transform: translateX(-50%);
+            display: flex;
+            gap: 12px;
             z-index: 10;
         }
 
         .nav-dot {
-            width: 14px;
-            height: 14px;
+            width: 12px;
+            height: 12px;
             border-radius: 50%;
-            background: rgba(255,255,255,0.6);
+            background: rgba(255,255,255,0.5);
             border: none;
             cursor: pointer;
-            margin: 0 6px;
-            display: inline-block;
         }
 
         .nav-dot.active {
@@ -213,28 +200,28 @@
         /* Right Column - Content Card */
         .content-card {
             background: #3b82f6;
+            display: flex;
+            flex-direction: column;
         }
 
         .content-header {
             padding: 32px;
-            border-bottom: 1px solid rgba(255,255,255,0.3);
-            background: #3b82f6;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
         }
 
         .content-title {
-            font-size: 36px;
+            font-size: 32px;
             font-weight: 700;
             color: #ffffff;
-            line-height: 1.3;
+            line-height: 1.2;
             text-align: right;
-            direction: rtl;
         }
 
         .content-body {
             padding: 32px;
             background: #2563eb;
-            height: calc(100vh - 370px);
-            overflow: hidden;
+            flex: 1;
+            overflow-y: auto;
         }
 
         .content-meta {
@@ -267,8 +254,6 @@
             color: rgba(255,255,255,0.9);
             font-size: 16px;
             line-height: 1.6;
-            direction: rtl;
-            text-align: right;
         }
 
         /* Footer */
@@ -278,16 +263,12 @@
             text-align: center;
             color: #a0aec0;
             font-size: 14px;
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            z-index: 1;
+            margin-top: 48px;
         }
 
         .footer-content {
-            width: 100%;
-            padding: 0 24px;
+            max-width: 1800px;
+            margin: 0 auto;
             display: flex;
             justify-content: space-between;
             align-items: center;
