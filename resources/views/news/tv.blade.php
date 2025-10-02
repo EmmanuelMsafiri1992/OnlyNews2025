@@ -101,7 +101,7 @@
             border-radius: 12px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
             overflow: hidden;
-            height: calc(100vh - 240px);
+            height: calc(100vh - 200px);
             position: relative;
         }
 
@@ -234,7 +234,7 @@
         .content-body {
             padding: 32px;
             background: #2563eb;
-            height: calc(100vh - 380px);
+            height: calc(100vh - 340px);
             overflow-y: auto;
         }
 
