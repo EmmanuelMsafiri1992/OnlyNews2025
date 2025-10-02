@@ -62,23 +62,25 @@
         }
 
         .grid-container {
-            display: table;
             width: 100%;
-            table-layout: fixed;
         }
 
-        .grid-container > div {
-            display: table-cell;
-            width: 50%;
-            vertical-align: top;
+        .left-column {
+            float: left;
+            width: 48%;
+            margin-right: 2%;
         }
 
-        .grid-container > div:first-child {
-            padding-right: 16px;
+        .right-column {
+            float: left;
+            width: 48%;
+            margin-left: 2%;
         }
 
-        .grid-container > div:last-child {
-            padding-left: 16px;
+        .clearfix:after {
+            content: "";
+            display: table;
+            clear: both;
         }
 
         /* Card Styles */
@@ -330,8 +332,9 @@
     <!-- Main Content -->
     <div class="main-container">
         @if(isset($news) && $news->count() > 0)
-            <div class="grid-container">
+            <div class="grid-container clearfix">
                 <!-- Left Column: Image Slider -->
+                <div class="left-column">
                 <div class="card slider-card">
                     @php $slideIndex = 0; @endphp
                     @foreach($news as $newsItem)
@@ -386,8 +389,10 @@
                         </div>
                     @endif
                 </div>
+                </div>
 
                 <!-- Right Column: Content Card -->
+                <div class="right-column">
                 <div class="card content-card">
                     @php
                         $currentIndex = 0;
@@ -410,6 +415,7 @@
                             {!! nl2br(e(strip_tags($currentItem->description))) !!}
                         </div>
                     </div>
+                </div>
                 </div>
             </div>
         @else
