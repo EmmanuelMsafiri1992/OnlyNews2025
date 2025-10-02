@@ -117,6 +117,23 @@
                         <link rel="stylesheet" href="{{ asset('build/' . $css) }}">
                     @endforeach
                 @endif
+
+                {{-- Legacy polyfills for old browsers (Chrome 25, IE11, etc.) --}}
+                @if (isset($manifest['vite/legacy-polyfills-legacy']))
+                    <script nomodule src="{{ asset('build/' . $manifest['vite/legacy-polyfills-legacy']['file']) }}"></script>
+                @endif
+
+                {{-- Legacy app script for old browsers --}}
+                @if (isset($manifest['resources/js/app-legacy.js']))
+                    <script nomodule src="{{ asset('build/' . $manifest['resources/js/app-legacy.js']['file']) }}"></script>
+                @endif
+
+                {{-- Modern polyfills (for module-supporting browsers that still need some polyfills) --}}
+                @if (isset($manifest['vite/legacy-polyfills']))
+                    <script type="module" src="{{ asset('build/' . $manifest['vite/legacy-polyfills']['file']) }}"></script>
+                @endif
+
+                {{-- Modern browsers load module version --}}
                 <script type="module" src="{{ asset('build/' . $manifest['resources/js/app.js']['file']) }}"></script>
             @endif
         @endif
