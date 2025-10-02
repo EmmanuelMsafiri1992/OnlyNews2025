@@ -213,13 +213,15 @@
         /* Right Column - Content Card */
         .content-card {
             background: #3b82f6;
+            display: flex;
+            flex-direction: column;
         }
 
         .content-header {
             padding: 32px;
             border-bottom: 1px solid rgba(255,255,255,0.3);
             background: #3b82f6;
-            height: 140px;
+            flex-shrink: 0;
         }
 
         .content-title {
@@ -234,7 +236,7 @@
         .content-body {
             padding: 32px;
             background: #2563eb;
-            height: calc(100vh - 340px);
+            flex: 1;
             overflow-y: auto;
         }
 
