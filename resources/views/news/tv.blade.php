@@ -70,7 +70,7 @@
         .main-container {
             width: 100%;
             padding: 24px;
-            padding-bottom: 100px;
+            padding-bottom: 24px;
         }
 
         .grid-container {
@@ -101,7 +101,7 @@
             border-radius: 12px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
             overflow: hidden;
-            height: calc(100vh - 200px);
+            height: calc(100vh - 180px);
             position: relative;
         }
 
@@ -213,15 +213,12 @@
         /* Right Column - Content Card */
         .content-card {
             background: #3b82f6;
-            display: flex;
-            flex-direction: column;
         }
 
         .content-header {
             padding: 32px;
             border-bottom: 1px solid rgba(255,255,255,0.3);
             background: #3b82f6;
-            flex-shrink: 0;
         }
 
         .content-title {
@@ -236,8 +233,8 @@
         .content-body {
             padding: 32px;
             background: #2563eb;
-            flex: 1;
-            overflow-y: auto;
+            height: calc(100vh - 310px);
+            overflow: hidden;
         }
 
         .content-meta {
@@ -277,7 +274,7 @@
         /* Footer */
         .footer {
             background: #2d3748;
-            padding: 24px 48px;
+            padding: 16px 48px;
             text-align: center;
             color: #a0aec0;
             font-size: 14px;
