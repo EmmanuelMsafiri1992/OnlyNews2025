@@ -1,110 +1,418 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-<title>News TV</title>
-<style>
-* { margin:0; padding:0; }
-body { font-family:Arial,sans-serif; background:#000; color:#fff; overflow:hidden; }
-.header { background:#1e3a5f; padding:20px; text-align:center; border-bottom:3px solid #2563eb; }
-.header h1 { font-size:42px; color:#fff; margin:0; font-weight:bold; }
-.container { width:100%; height:calc(100vh - 140px); display:table; }
-.left { display:table-cell; width:70%; background:#000; vertical-align:top; position:relative; }
-.right { display:table-cell; width:30%; background:#1e293b; vertical-align:top; border-left:3px solid #2563eb; overflow-y:auto; }
-.slide { display:none; width:100%; height:100%; text-align:center; }
-.slide.active { display:block; }
-.slide img { max-width:95%; max-height:75vh; margin:20px auto; display:block; }
-.info { position:absolute; bottom:0; left:0; right:0; background:rgba(30,58,95,0.95); padding:20px; border-top:3px solid #2563eb; }
-.info h2 { font-size:32px; color:#fff; margin:0 0 10px 0; }
-.info p { font-size:20px; color:#cbd5e1; margin:0; line-height:1.4; }
-.item { padding:18px; border-bottom:2px solid #334155; cursor:pointer; }
-.item.active { background:#2563eb; }
-.item h3 { font-size:18px; color:#fff; margin:0 0 6px 0; }
-.item .date { font-size:13px; color:#94a3b8; }
-.footer { background:#1e3a5f; padding:15px; text-align:center; font-size:14px; color:#cbd5e1; border-top:3px solid #2563eb; }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>{{ $settings['app_name'] ?? 'School News' }}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: #f9fafb;
+            color: #1f2937;
+            line-height: 1.6;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+            padding: 24px 48px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .header-content {
+            max-width: 1800px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 42px;
+            font-weight: 700;
+            color: #ffffff;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .header-nav {
+            display: flex;
+            gap: 32px;
+        }
+
+        .header-nav a {
+            color: #ffffff;
+            text-decoration: none;
+            font-size: 18px;
+            font-weight: 500;
+            opacity: 0.9;
+            transition: opacity 0.2s;
+        }
+
+        .header-nav a:hover {
+            opacity: 1;
+        }
+
+        /* Main Container */
+        .main-container {
+            max-width: 1800px;
+            margin: 0 auto;
+            padding: 48px;
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 48px;
+            min-height: calc(100vh - 240px);
+        }
+
+        /* Card Styles */
+        .card {
+            background: #ffffff;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
+        }
+
+        /* Left Column - Slider */
+        .slider-card {
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .slide {
+            display: none;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .slide.active {
+            display: flex;
+        }
+
+        .slide-image-container {
+            flex: 1;
+            background: #000000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            min-height: 600px;
+        }
+
+        .slide-image {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .slide-info {
+            padding: 32px;
+            background: #ffffff;
+        }
+
+        .slide-category {
+            display: inline-block;
+            background: #3b82f6;
+            color: #ffffff;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+
+        .slide-title {
+            font-size: 36px;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 16px;
+            line-height: 1.2;
+        }
+
+        .slide-description {
+            font-size: 18px;
+            color: #6b7280;
+            line-height: 1.6;
+            margin-bottom: 16px;
+        }
+
+        .slide-date {
+            font-size: 14px;
+            color: #9ca3af;
+        }
+
+        /* Right Column - News List */
+        .news-list {
+            overflow-y: auto;
+            max-height: calc(100vh - 240px);
+        }
+
+        .news-item {
+            padding: 24px;
+            border-bottom: 1px solid #e5e7eb;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .news-item:hover {
+            background: #f9fafb;
+        }
+
+        .news-item.active {
+            background: #eff6ff;
+            border-left: 4px solid #3b82f6;
+        }
+
+        .news-item-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+
+        .news-item.active .news-item-title {
+            color: #2563eb;
+        }
+
+        .news-item-meta {
+            display: flex;
+            gap: 16px;
+            font-size: 14px;
+            color: #6b7280;
+        }
+
+        .news-item-date,
+        .news-item-category {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* Footer */
+        .footer {
+            background: #1f2937;
+            padding: 24px 48px;
+            text-align: center;
+            color: #9ca3af;
+            font-size: 14px;
+            margin-top: auto;
+        }
+
+        /* No News Message */
+        .no-news {
+            text-align: center;
+            padding: 100px 48px;
+            color: #9ca3af;
+        }
+
+        .no-news svg {
+            width: 96px;
+            height: 96px;
+            margin: 0 auto 24px;
+            opacity: 0.5;
+        }
+
+        .no-news h2 {
+            font-size: 32px;
+            color: #6b7280;
+        }
+
+        /* Scrollbar Styling */
+        .news-list::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .news-list::-webkit-scrollbar-track {
+            background: #f3f4f6;
+        }
+
+        .news-list::-webkit-scrollbar-thumb {
+            background: #d1d5db;
+            border-radius: 4px;
+        }
+
+        .news-list::-webkit-scrollbar-thumb:hover {
+            background: #9ca3af;
+        }
+    </style>
 </head>
 <body>
+    <!-- Header -->
+    <div class="header">
+        <div class="header-content">
+            <h1>{{ $settings['app_name'] ?? 'Welcome All' }}</h1>
+            <div class="header-nav">
+                <a href="/">Home</a>
+                <a href="/login">Login</a>
+            </div>
+        </div>
+    </div>
 
-<div class="header">
-<h1>@if(isset($settings['app_name'])){{ $settings['app_name'] }}@else School News @endif</h1>
-</div>
+    <!-- Main Content -->
+    <div class="main-container">
+        @if(isset($news) && $news->count() > 0)
+            <div class="grid-container">
+                <!-- Left Column: Slider -->
+                <div class="card slider-card">
+                    @php $slideIndex = 0; @endphp
+                    @foreach($news as $newsItem)
+                        @if($newsItem->images->count() > 0)
+                            @foreach($newsItem->images as $image)
+                                <div class="slide {{ $slideIndex === 0 ? 'active' : '' }}"
+                                     data-index="{{ $slideIndex }}"
+                                     data-duration="{{ $image->slide_duration ?? 5000 }}"
+                                     data-news-id="{{ $newsItem->id }}">
+                                    <div class="slide-image-container">
+                                        <img src="{{ asset('storage/' . $image->url) }}"
+                                             alt="{{ $newsItem->title }}"
+                                             class="slide-image">
+                                    </div>
+                                    <div class="slide-info">
+                                        <span class="slide-category">{{ $newsItem->category->name ?? 'חוקים' }}</span>
+                                        <h2 class="slide-title">{{ $newsItem->title }}</h2>
+                                        <p class="slide-description">{{ strip_tags($newsItem->description) }}</p>
+                                        <div class="slide-date">{{ $newsItem->created_at->format('M d, Y') }}</div>
+                                    </div>
+                                </div>
+                                @php $slideIndex++; @endphp
+                            @endforeach
+                        @else
+                            <div class="slide {{ $slideIndex === 0 ? 'active' : '' }}"
+                                 data-index="{{ $slideIndex }}"
+                                 data-duration="5000"
+                                 data-news-id="{{ $newsItem->id }}">
+                                <div class="slide-info" style="padding: 80px 48px;">
+                                    <span class="slide-category">{{ $newsItem->category->name ?? 'חוקים' }}</span>
+                                    <h2 class="slide-title">{{ $newsItem->title }}</h2>
+                                    <p class="slide-description">{{ strip_tags($newsItem->description) }}</p>
+                                    <div class="slide-date">{{ $newsItem->created_at->format('M d, Y') }}</div>
+                                </div>
+                            </div>
+                            @php $slideIndex++; @endphp
+                        @endif
+                    @endforeach
+                </div>
 
-<div class="container">
-<div class="left">
-@if(isset($news) && $news->count() > 0)
-@php $num = 0; @endphp
-@foreach($news as $item)
-@if(isset($item->images) && $item->images->count() > 0)
-@foreach($item->images as $img)
-<div class="slide @if($num == 0) active @endif" data-id="{{ $item->id }}" data-time="{{ $img->slide_duration ?? 5000 }}">
-<img src="{{ asset('storage/' . $img->url) }}" alt="">
-<div class="info">
-<h2>@if(isset($item->title)){{ strip_tags($item->title) }}@endif</h2>
-<p>@if(isset($item->description)){{ strip_tags($item->description) }}@endif</p>
-</div>
-</div>
-@php $num++; @endphp
-@endforeach
-@else
-<div class="slide @if($num == 0) active @endif" data-id="{{ $item->id }}" data-time="5000">
-<div class="info" style="position:relative; top:30%; transform:translateY(-50%);">
-<h2>@if(isset($item->title)){{ strip_tags($item->title) }}@endif</h2>
-<p>@if(isset($item->description)){{ strip_tags($item->description) }}@endif</p>
-</div>
-</div>
-@php $num++; @endphp
-@endif
-@endforeach
-@else
-<div class="slide active"><div class="info" style="text-align:center; padding:50px;"><h2>No News Available</h2></div></div>
-@endif
-</div>
+                <!-- Right Column: News List -->
+                <div class="card">
+                    <div class="news-list">
+                        @php $itemIndex = 0; @endphp
+                        @foreach($news as $newsItem)
+                            <div class="news-item {{ $itemIndex === 0 ? 'active' : '' }}"
+                                 data-news-id="{{ $newsItem->id }}"
+                                 onclick="highlightNews({{ $newsItem->id }})">
+                                <h3 class="news-item-title">{{ $newsItem->title }}</h3>
+                                <div class="news-item-meta">
+                                    <span class="news-item-date">📅 {{ $newsItem->created_at->format('M d, Y') }}</span>
+                                    <span class="news-item-category">📂 {{ $newsItem->category->name ?? 'News' }}</span>
+                                </div>
+                            </div>
+                            @php $itemIndex++; @endphp
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+        @else
+            <div class="no-news">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+                </svg>
+                <h2>No news available at the moment</h2>
+            </div>
+        @endif
+    </div>
 
-<div class="right">
-@if(isset($news) && $news->count() > 0)
-@php $i = 0; @endphp
-@foreach($news as $item)
-<div class="item @if($i == 0) active @endif" data-id="{{ $item->id }}">
-<h3>@if(isset($item->title)){{ strip_tags($item->title) }}@endif</h3>
-<div class="date">@if(isset($item->created_at)){{ $item->created_at->format('M d, Y') }}@endif</div>
-</div>
-@php $i++; @endphp
-@endforeach
-@endif
-</div>
-</div>
+    <!-- Footer -->
+    <div class="footer">
+        {{ $settings['footer_copyright_text'] ?? 'VCNS © 2025' }} | {{ $settings['footer_contact_info'] ?? 'Contact Us Now.' }}
+    </div>
 
-<div class="footer">
-@if(isset($settings['footer_copyright_text'])){{ $settings['footer_copyright_text'] }}@else VCNS @ 2025 @endif
-</div>
+    <script>
+        var currentSlideIndex = 0;
+        var slides = document.querySelectorAll('.slide');
+        var newsItems = document.querySelectorAll('.news-item');
+        var autoSlideTimeout = null;
 
-<script>
-var slides = document.getElementsByClassName('slide');
-var items = document.getElementsByClassName('item');
-var idx = 0;
+        function showSlide(index) {
+            if (slides.length === 0) return;
 
-function next() {
-    if (!slides || slides.length === 0) return;
-    for (var i = 0; i < slides.length; i++) slides[i].className = 'slide';
-    if (idx >= slides.length) idx = 0;
-    slides[idx].className = 'slide active';
-    var id = slides[idx].getAttribute('data-id');
-    for (var j = 0; j < items.length; j++) {
-        if (items[j].getAttribute('data-id') === id) {
-            items[j].className = 'item active';
-        } else {
-            items[j].className = 'item';
+            // Wrap around
+            if (index >= slides.length) index = 0;
+            if (index < 0) index = slides.length - 1;
+
+            currentSlideIndex = index;
+
+            // Hide all slides
+            for (var i = 0; i < slides.length; i++) {
+                slides[i].classList.remove('active');
+            }
+
+            // Show current slide
+            slides[currentSlideIndex].classList.add('active');
+
+            // Update news item highlights
+            var currentNewsId = slides[currentSlideIndex].getAttribute('data-news-id');
+            for (var j = 0; j < newsItems.length; j++) {
+                if (newsItems[j].getAttribute('data-news-id') === currentNewsId) {
+                    newsItems[j].classList.add('active');
+                } else {
+                    newsItems[j].classList.remove('active');
+                }
+            }
+
+            // Start auto-slide
+            startAutoSlide();
         }
-    }
-    var t = parseInt(slides[idx].getAttribute('data-time')) || 5000;
-    idx++;
-    setTimeout(next, t);
-}
 
-if (slides.length > 0) next();
-setTimeout(function() { location.reload(); }, 300000);
-</script>
+        function startAutoSlide() {
+            if (autoSlideTimeout) {
+                clearTimeout(autoSlideTimeout);
+            }
 
+            var duration = parseInt(slides[currentSlideIndex].getAttribute('data-duration')) || 5000;
+
+            autoSlideTimeout = setTimeout(function() {
+                showSlide(currentSlideIndex + 1);
+            }, duration);
+        }
+
+        function highlightNews(newsId) {
+            // Find slide with matching news ID
+            for (var i = 0; i < slides.length; i++) {
+                if (slides[i].getAttribute('data-news-id') == newsId) {
+                    showSlide(i);
+                    break;
+                }
+            }
+        }
+
+        // Initialize
+        if (slides.length > 0) {
+            showSlide(0);
+        }
+
+        // Auto-refresh every 5 minutes
+        setTimeout(function() {
+            window.location.reload();
+        }, 300000);
+    </script>
 </body>
 </html>

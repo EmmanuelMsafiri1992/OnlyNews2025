@@ -10,21 +10,35 @@ class NewsController extends Controller
 {
     public function index(Request $request)
     {
-        // Get user agent for debugging
+        // Get user agent
         $userAgent = strtolower($request->header('User-Agent', ''));
         Log::info('Browser accessing app', ['user_agent' => $userAgent]);
 
-        // Only serve simple HTML view if explicitly requested via parameter
-        // The Vue app's legacy plugin will handle browser compatibility automatically
-        if ($request->get('simple') === '1' || $request->get('tv') === '1') {
+        // Check Chrome/Chromium version
+        $chromeVersion = 999;
+        if (preg_match('/chrome\/([0-9]+)/i', $userAgent, $matches)) {
+            $chromeVersion = (int)$matches[1];
+        } elseif (preg_match('/chromium\/([0-9]+)/i', $userAgent, $matches)) {
+            $chromeVersion = (int)$matches[1];
+        }
+
+        // Detect very old browsers that can't run Vue 3 even with polyfills
+        $isVeryOldBrowser = (
+            $chromeVersion < 49 || // Chrome < 49 (2016) can't run Vue 3
+            stripos($userAgent, 'msie') !== false ||
+            stripos($userAgent, 'trident') !== false
+        );
+
+        // Serve optimized HTML view for very old browsers or if explicitly requested
+        if ($isVeryOldBrowser || $request->get('simple') === '1' || $request->get('tv') === '1') {
             try {
-                // Serve simple server-rendered page for TVs that explicitly request it
                 $news = News::with('category', 'images')->get();
                 $settings = \App\Models\Setting::pluck('value', 'key')->toArray();
 
-                Log::info('Serving simple TV view (requested via parameter)', [
-                    'news_count' => $news->count(),
-                    'settings_count' => count($settings)
+                Log::info('Serving optimized TV view', [
+                    'chrome_version' => $chromeVersion,
+                    'is_very_old' => $isVeryOldBrowser,
+                    'news_count' => $news->count()
                 ]);
 
                 return response()
@@ -33,14 +47,13 @@ class NewsController extends Controller
                     ->header('Pragma', 'no-cache')
                     ->header('Expires', '0');
             } catch (\Exception $e) {
-                Log::error('Error serving simple view', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+                Log::error('Error serving TV view', ['error' => $e->getMessage()]);
                 return response('<h1>Error loading page</h1><p>' . $e->getMessage() . '</p>', 500);
             }
         }
 
-        // Serve Vue app with legacy support for all browsers (including old TVs)
-        // Vite's legacy plugin will automatically serve polyfilled version to old browsers
-        Log::info('Serving Vue app (with legacy browser support)');
+        // Serve Vue app for modern browsers (Chrome 49+)
+        Log::info('Serving Vue app');
         return view('layouts.app');
     }
 
