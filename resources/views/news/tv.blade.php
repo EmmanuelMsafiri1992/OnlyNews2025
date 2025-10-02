@@ -33,14 +33,21 @@
             width: 100%;
             padding: 0 24px;
             position: relative;
-            text-align: center;
+            min-height: 40px;
         }
 
         .header h1 {
-            font-size: 28px;
+            font-size: 32px;
             font-weight: 400;
             color: #ffffff;
             margin: 0;
+            text-align: center;
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: auto;
+            white-space: nowrap;
         }
 
         .header-nav {
@@ -48,8 +55,6 @@
             right: 24px;
             top: 50%;
             transform: translateY(-50%);
-            display: flex;
-            gap: 32px;
         }
 
         .header-nav a {
@@ -57,7 +62,9 @@
             text-decoration: none;
             font-size: 16px;
             font-weight: 400;
+            margin-left: 32px;
         }
+
 
         /* Main Container */
         .main-container {
