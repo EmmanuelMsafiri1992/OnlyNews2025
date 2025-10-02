@@ -29,8 +29,8 @@
         }
 
         .header-content {
-            max-width: 1800px;
-            margin: 0 auto;
+            width: 100%;
+            padding: 0 24px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -56,9 +56,8 @@
 
         /* Main Container */
         .main-container {
-            max-width: 1800px;
-            margin: 0 auto;
-            padding: 48px;
+            width: 100%;
+            padding: 24px;
         }
 
         .grid-container {
@@ -89,7 +88,7 @@
             border-radius: 12px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
             overflow: hidden;
-            height: 600px;
+            height: 70vh;
             position: relative;
         }
 
@@ -220,7 +219,7 @@
         .content-body {
             padding: 32px;
             background: #2563eb;
-            height: 488px;
+            height: calc(70vh - 112px);
             overflow-y: auto;
         }
 
@@ -267,8 +266,8 @@
         }
 
         .footer-content {
-            max-width: 1800px;
-            margin: 0 auto;
+            width: 100%;
+            padding: 0 24px;
             display: flex;
             justify-content: space-between;
             align-items: center;
