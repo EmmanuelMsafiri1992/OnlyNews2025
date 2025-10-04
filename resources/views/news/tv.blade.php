@@ -19,7 +19,6 @@
             background: #f9fafb;
             color: #1f2937;
             line-height: 1.6;
-            direction: rtl;
         }
 
         /* Header */
