@@ -19,6 +19,7 @@
             background: #f9fafb;
             color: #1f2937;
             line-height: 1.6;
+            direction: rtl;
         }
 
         /* Header */
@@ -130,12 +131,16 @@
             margin-bottom: 8px;
             line-height: 1.2;
             text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+            direction: rtl;
+            text-align: right;
         }
 
         .slide-date {
             font-size: 14px;
             color: rgba(255,255,255,0.95);
             text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+            direction: rtl;
+            text-align: right;
         }
 
         /* Navigation Arrows */
@@ -214,6 +219,7 @@
             color: #ffffff;
             line-height: 1.3;
             text-align: right;
+            direction: rtl;
         }
 
         .content-body {
@@ -253,6 +259,8 @@
             color: rgba(255,255,255,0.9);
             font-size: 16px;
             line-height: 1.6;
+            direction: rtl;
+            text-align: right;
         }
 
         /* Footer */
@@ -294,6 +302,7 @@
             font-weight: 700;
             margin-bottom: 16px;
             text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            direction: rtl;
         }
 
         .no-image-date {
