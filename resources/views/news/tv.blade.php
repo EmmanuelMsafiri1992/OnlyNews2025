@@ -582,10 +582,10 @@
             showSlide(0);
         }
 
-        // Auto-refresh every 5 minutes
+        // Auto-refresh every 1 minute (change to 300000 for 5 minutes in production)
         setTimeout(function() {
             window.location.reload();
-        }, 300000);
+        }, 60000);
     </script>
 </body>
 </html>
