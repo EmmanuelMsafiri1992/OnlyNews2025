@@ -449,7 +449,7 @@
                             <div class="content-category" id="content-category">{{ $currentItem->category->name ?? 'חוקים' }}</div>
                         </div>
                         <div class="content-description" id="content-description">
-                            {!! nl2br(e(strip_tags($currentItem->description))) !!}
+                            {!! $currentItem->description !!}
                         </div>
                     </div>
                 </div>
@@ -482,7 +482,7 @@
                     title: {!! json_encode(strip_tags($item->title)) !!},
                     date: "{{ $item->created_at->format('M d, Y') }}",
                     category: "{{ $item->category->name ?? 'חוקים' }}",
-                    description: {!! json_encode(nl2br(e(strip_tags($item->description)))) !!}
+                    description: {!! json_encode($item->description) !!}
                 },
             @endforeach
         ];
