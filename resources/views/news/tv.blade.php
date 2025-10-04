@@ -323,6 +323,36 @@
             background: rgba(255,255,255,0.3);
             border-radius: 3px;
         }
+
+        /* Responsive font sizes for different screen resolutions */
+
+        /* Large screens (HD - 1025px to 1919px) */
+        @media screen and (min-width: 1025px) and (max-width: 1919px) {
+            .header h1 { font-size: 32px; }
+            .slide-title { font-size: 32px; }
+            .slide-date { font-size: 16px; }
+            .content-title { font-size: 40px; }
+            .content-date { font-size: 16px; }
+            .content-category { font-size: 16px; }
+            .content-description { font-size: 18px; }
+            .no-image-title { font-size: 44px; }
+            .no-image-date { font-size: 20px; }
+            .footer { font-size: 16px; }
+        }
+
+        /* Extra Large screens (4K and above - 1920px+) */
+        @media screen and (min-width: 1920px) {
+            .header h1 { font-size: 48px; }
+            .slide-title { font-size: 42px; }
+            .slide-date { font-size: 24px; }
+            .content-title { font-size: 56px; }
+            .content-date { font-size: 20px; }
+            .content-category { font-size: 20px; }
+            .content-description { font-size: 24px; line-height: 1.8; }
+            .no-image-title { font-size: 60px; }
+            .no-image-date { font-size: 28px; }
+            .footer { font-size: 18px; }
+        }
     </style>
 </head>
 <body>
